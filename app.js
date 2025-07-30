@@ -392,5 +392,55 @@ const AutoWartungApp = () => {
                 React.createElement('span', { className: 'status-badge' }, getStatusText(status)),
                 React.createElement('button', {
                   onClick: () => markAsCompleted(maintenance.id),
-                  className: 'btn btn-primary btn-small'
-                }, maintenance.
+                  className: 'button-primary btn-small'
+                }, maintenance.completed ? 'Rückgängig' : 'Erledigt')
+              )
+            );
+          })
+        )
+      )
+    );
+  };
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return renderOverview();
+      case 'calendar':
+        return renderCalendar();
+      case 'cars':
+        return renderCars();
+      case 'maintenance':
+        return renderMaintenance();
+      default:
+        return renderOverview();
+    }
+  };
+
+  return React.createElement('div', { className: 'app' },
+    React.createElement('nav', { className: 'tab-nav' },
+      React.createElement('button', {
+        className: activeTab === 'overview' ? 'active' : '',
+        onClick: () => setActiveTab('overview')
+      }, 'Übersicht'),
+      React.createElement('button', {
+        className: activeTab === 'calendar' ? 'active' : '',
+        onClick: () => setActiveTab('calendar')
+      }, 'Kalender'),
+      React.createElement('button', {
+        className: activeTab === 'cars' ? 'active' : '',
+        onClick: () => setActiveTab('cars')
+      }, 'Fahrzeuge'),
+      React.createElement('button', {
+        className: activeTab === 'maintenance' ? 'active' : '',
+        onClick: () => setActiveTab('maintenance')
+      }, 'Wartungen')
+    ),
+    renderContent()
+  );
+}; // 👈 Ende der Komponente
+
+// 🚀 App starten (wenn in index.html ein <div id="root"></div> vorhanden ist)
+ReactDOM.render(
+  React.createElement(AutoWartungApp),
+  document.getElementById('root')
+);
