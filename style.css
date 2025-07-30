@@ -38,6 +38,46 @@ body {
     flex: 1;
 }
 
+/* Tab Navigation - NEUE STYLES */
+.tab-nav {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 1.5rem;
+    display: flex;
+    gap: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tab-nav button {
+    background: none;
+    border: none;
+    padding: 1rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    position: relative;
+}
+
+.tab-nav button:hover {
+    color: #2563eb;
+    background-color: #f8fafc;
+}
+
+.tab-nav button.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+    background-color: #fafbfc;
+}
+
+.tab-nav button:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
 /* Navigation */
 .nav {
     width: 16rem;
@@ -93,7 +133,7 @@ body {
 
 .card-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
@@ -141,6 +181,23 @@ body {
 .btn-small {
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
+}
+
+/* Button fix für Wartungen */
+.button-primary {
+    background-color: #2563eb;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.button-primary:hover {
+    background-color: #1d4ed8;
 }
 
 /* Status Colors */
@@ -233,8 +290,10 @@ body {
     padding: 1rem;
     border: 2px solid #d1d5db;
     border-radius: 8px;
-    cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .car-card:hover {
@@ -261,6 +320,51 @@ body {
     color: #2563eb;
     font-size: 0.875rem;
     margin-top: 0.5rem;
+}
+
+.car-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Delete Button */
+.btn-delete {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-delete:hover {
+    background-color: #dc2626;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+/* Modal Variations */
+.modal-small {
+    width: 20rem;
 }
 
 /* Calendar */
@@ -431,6 +535,7 @@ body {
 .icon-warning::before { content: "⚠️"; }
 .icon-clock::before { content: "⏰"; }
 .icon-settings::before { content: "⚙️"; }
+.icon-trash::before { content: "🗑️"; }
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -452,6 +557,17 @@ body {
     .nav-button {
         white-space: nowrap;
         margin-bottom: 0;
+    }
+    
+    /* Tab Navigation Mobile */
+    .tab-nav {
+        overflow-x: auto;
+        padding: 0 1rem;
+    }
+    
+    .tab-nav button {
+        padding: 0.75rem 1rem;
+        font-size: 0.8rem;
     }
     
     .calendar-grid {

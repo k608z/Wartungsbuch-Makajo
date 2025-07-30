@@ -55,6 +55,7 @@ const AutoWartungApp = () => {
     intervalType: 'months',
     mileageInterval: ''
   });
+  const [carToDelete, setCarToDelete] = useState(null);
 
   const getSelectedCar = () => cars.find(car => car.selected);
 
@@ -151,6 +152,24 @@ const AutoWartungApp = () => {
 
   const selectCar = (carId) => {
     setCars(cars.map(car => ({ ...car, selected: car.id === carId })));
+  };
+
+  const deleteCar = (carId) => {
+    // Wartungen des Fahrzeugs auch löschen
+    setMaintenances(maintenances.filter(m => m.carId !== carId));
+    
+    // Fahrzeug löschen
+    const remainingCars = cars.filter(car => car.id !== carId);
+    setCars(remainingCars);
+    
+    // Wenn das gelöschte Fahrzeug ausgewählt war, das erste verbleibende auswählen
+    const deletedCar = cars.find(car => car.id === carId);
+    if (deletedCar && deletedCar.selected && remainingCars.length > 0) {
+      remainingCars[0].selected = true;
+      setCars(remainingCars);
+    }
+    
+    setCarToDelete(null);
   };
 
   const getCarMaintenances = () => {
@@ -300,14 +319,53 @@ const AutoWartungApp = () => {
           cars.map(car =>
             React.createElement('div', {
               key: car.id,
-              className: `car-card ${car.selected ? 'selected' : ''}`,
-              onClick: () => selectCar(car.id)
+              className: `car-card ${car.selected ? 'selected' : ''}`
             },
-              React.createElement('h3', null, car.model),
-              React.createElement('p', null, `Baujahr: ${car.year}`),
-              React.createElement('p', null, `Laufleistung: ${car.mileage.toLocaleString()} km`),
-              car.selected && React.createElement('p', { className: 'selected-indicator' }, '✓ Ausgewählt')
+              React.createElement('div', {
+                onClick: () => selectCar(car.id),
+                style: { cursor: 'pointer', flex: 1 }
+              },
+                React.createElement('h3', null, car.model),
+                React.createElement('p', null, `Baujahr: ${car.year}`),
+                React.createElement('p', null, `Laufleistung: ${car.mileage.toLocaleString()} km`),
+                car.selected && React.createElement('p', { className: 'selected-indicator' }, '✓ Ausgewählt')
+              ),
+              React.createElement('div', { className: 'car-card-actions' },
+                React.createElement('button', {
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    setCarToDelete(car.id);
+                  },
+                  className: 'btn-delete',
+                  title: 'Fahrzeug löschen'
+                },
+                  React.createElement('span', { className: 'icon icon-trash' })
+                )
+              )
             )
+          )
+        )
+      ),
+      
+      // Bestätigungsdialog für Fahrzeug löschen
+      carToDelete && React.createElement('div', { className: 'modal-overlay' },
+        React.createElement('div', { className: 'modal modal-small' },
+          React.createElement('h3', null, 'Fahrzeug löschen'),
+          React.createElement('p', { style: { marginBottom: '1rem', color: '#6b7280' } },
+            `Möchten Sie das Fahrzeug "${cars.find(c => c.id === carToDelete)?.model}" wirklich löschen?`
+          ),
+          React.createElement('p', { style: { marginBottom: '1.5rem', color: '#ef4444', fontSize: '0.875rem' } },
+            'Alle zugehörigen Wartungen werden ebenfalls gelöscht.'
+          ),
+          React.createElement('div', { className: 'modal-actions' },
+            React.createElement('button', {
+              onClick: () => setCarToDelete(null),
+              className: 'btn-text'
+            }, 'Abbrechen'),
+            React.createElement('button', {
+              onClick: () => deleteCar(carToDelete),
+              className: 'btn btn-danger'
+            }, 'Löschen')
           )
         )
       ),
@@ -354,6 +412,7 @@ const AutoWartungApp = () => {
 
   const renderMaintenance = () => {
     const carMaintenances = getCarMaintenances();
+    const selectedCar = getSelectedCar();
     
     return React.createElement('div', { className: 'main-content' },
       React.createElement('div', { className: 'card' },
@@ -392,15 +451,83 @@ const AutoWartungApp = () => {
                 React.createElement('span', { className: 'status-badge' }, getStatusText(status)),
                 React.createElement('button', {
                   onClick: () => markAsCompleted(maintenance.id),
-                  className: 'button-primary btn-small'
+                  className: 'btn btn-primary btn-small'
                 }, maintenance.completed ? 'Rückgängig' : 'Erledigt')
               )
             );
           })
         )
+      ),
+      
+      // HIER WAR DAS FEHLENDE MODAL!
+      showAddMaintenance && React.createElement('div', { className: 'modal-overlay' },
+        React.createElement('div', { className: 'modal' },
+          React.createElement('h3', null, 'Neue Wartung hinzufügen'),
+          selectedCar ? 
+            React.createElement('div', null,
+              React.createElement('p', { style: { marginBottom: '1rem', color: '#6b7280' } }, 
+                `Für: ${selectedCar.model}`
+              ),
+              React.createElement('div', { className: 'modal-form' },
+                React.createElement('input', {
+                  type: 'text',
+                  placeholder: 'Wartungstyp (z.B. Ölwechsel, Inspektion)',
+                  value: newMaintenance.type,
+                  onChange: (e) => setNewMaintenance({...newMaintenance, type: e.target.value}),
+                  className: 'form-input'
+                }),
+                React.createElement('input', {
+                  type: 'date',
+                  placeholder: 'Letztes Wartungsdatum',
+                  value: newMaintenance.lastDate,
+                  onChange: (e) => setNewMaintenance({...newMaintenance, lastDate: e.target.value}),
+                  className: 'form-input'
+                }),
+                React.createElement('div', { className: 'form-row' },
+                  React.createElement('input', {
+                    type: 'number',
+                    placeholder: 'Intervall',
+                    value: newMaintenance.interval,
+                    onChange: (e) => setNewMaintenance({...newMaintenance, interval: e.target.value}),
+                    className: 'form-input'
+                  }),
+                  React.createElement('select', {
+                    value: newMaintenance.intervalType,
+                    onChange: (e) => setNewMaintenance({...newMaintenance, intervalType: e.target.value}),
+                    className: 'form-select'
+                  },
+                    React.createElement('option', { value: 'months' }, 'Monate'),
+                    React.createElement('option', { value: 'years' }, 'Jahre')
+                  )
+                ),
+                React.createElement('input', {
+                  type: 'number',
+                  placeholder: 'Kilometerintervall (optional)',
+                  value: newMaintenance.mileageInterval,
+                  onChange: (e) => setNewMaintenance({...newMaintenance, mileageInterval: e.target.value}),
+                  className: 'form-input'
+                })
+              )
+            ) :
+            React.createElement('p', { style: { color: '#ef4444', marginBottom: '1rem' } }, 
+              'Bitte wählen Sie zuerst ein Fahrzeug aus.'
+            ),
+          React.createElement('div', { className: 'modal-actions' },
+            React.createElement('button', {
+              onClick: () => setShowAddMaintenance(false),
+              className: 'btn-text'
+            }, 'Abbrechen'),
+            React.createElement('button', {
+              onClick: addMaintenance,
+              className: 'btn btn-primary',
+              disabled: !selectedCar
+            }, 'Hinzufügen')
+          )
+        )
       )
     );
   };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -437,7 +564,7 @@ const AutoWartungApp = () => {
     ),
     renderContent()
   );
-}; // 👈 Ende der Komponente
+};
 
 // 🚀 App starten (wenn in index.html ein <div id="root"></div> vorhanden ist)
 ReactDOM.render(
