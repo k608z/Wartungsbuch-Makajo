@@ -1,10 +1,11 @@
-// Auto Wartungs-Manager - Vanilla JavaScript Version
+// Auto Wartungs-Manager - Vanilla JavaScript Version mit Dark Mode
 class AutoWartungApp {
     constructor() {
         this.activeTab = 'overview';
         this.currentDate = new Date();
         this.editingCarId = null;
         this.carToDelete = null;
+        this.isDarkMode = false;
         
         // Initial data
         this.cars = [
@@ -56,8 +57,34 @@ class AutoWartungApp {
     }
     
     init() {
+        this.loadDarkModePreference();
         this.bindEvents();
         this.renderContent();
+    }
+    
+    // Dark Mode Management
+    loadDarkModePreference() {
+        // In memory storage since localStorage is not available
+        this.isDarkMode = false; // Default to light mode
+        this.updateDarkMode();
+    }
+    
+    toggleDarkMode() {
+        this.isDarkMode = !this.isDarkMode;
+        this.updateDarkMode();
+    }
+    
+    updateDarkMode() {
+        const body = document.body;
+        const icon = document.getElementById('darkModeIcon');
+        
+        if (this.isDarkMode) {
+            body.classList.add('dark-mode');
+            icon.className = 'bi bi-sun-fill';
+        } else {
+            body.classList.remove('dark-mode');
+            icon.className = 'bi bi-moon-fill';
+        }
     }
     
     bindEvents() {
@@ -66,6 +93,11 @@ class AutoWartungApp {
             btn.addEventListener('click', (e) => {
                 this.setActiveTab(e.target.closest('.tab-btn').dataset.tab);
             });
+        });
+        
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            this.toggleDarkMode();
         });
         
         // Modal events
