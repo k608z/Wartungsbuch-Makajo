@@ -4,13 +4,167 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto Wartungs-Manager</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="text/babel" src="App.js"></script>
+    <div class="app">
+        <!-- Tab Navigation -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="overview">
+                <i class="bi bi-house-fill"></i> Übersicht
+            </button>
+            <button class="tab-btn" data-tab="calendar">
+                <i class="bi bi-calendar3"></i> Kalender
+            </button>
+            <button class="tab-btn" data-tab="cars">
+                <i class="bi bi-car-front-fill"></i> Fahrzeuge
+            </button>
+            <button class="tab-btn" data-tab="maintenance">
+                <i class="bi bi-tools"></i> Wartungen
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <div id="main-content" class="main-content">
+            <!-- Content wird durch JavaScript geladen -->
+        </div>
+    </div>
+
+    <!-- Modal für Fahrzeug hinzufügen -->
+    <div class="modal fade" id="addCarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neues Fahrzeug hinzufügen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCarForm">
+                        <div class="mb-3">
+                            <label for="carModel" class="form-label">Modell</label>
+                            <input type="text" class="form-control" id="carModel" placeholder="z.B. BMW 320i" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="carYear" class="form-label">Baujahr</label>
+                            <input type="number" class="form-control" id="carYear" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="carMileage" class="form-label">Laufleistung (km)</label>
+                            <input type="number" class="form-control" id="carMileage" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveCarBtn">Hinzufügen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal für Fahrzeug bearbeiten -->
+    <div class="modal fade" id="editCarModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Fahrzeug bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCarForm">
+                        <div class="mb-3">
+                            <label for="editCarModel" class="form-label">Modell</label>
+                            <input type="text" class="form-control" id="editCarModel" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCarYear" class="form-label">Baujahr</label>
+                            <input type="number" class="form-control" id="editCarYear" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCarMileage" class="form-label">Laufleistung (km)</label>
+                            <input type="number" class="form-control" id="editCarMileage" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveEditCarBtn">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal für Wartung hinzufügen -->
+    <div class="modal fade" id="addMaintenanceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Neue Wartung hinzufügen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="selectedCarInfo" class="alert alert-info mb-3"></div>
+                    <form id="addMaintenanceForm">
+                        <div class="mb-3">
+                            <label for="maintenanceType" class="form-label">Wartungstyp</label>
+                            <input type="text" class="form-control" id="maintenanceType" placeholder="z.B. Ölwechsel, Inspektion" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lastDate" class="form-label">Letztes Wartungsdatum</label>
+                            <input type="date" class="form-control" id="lastDate" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="interval" class="form-label">Intervall</label>
+                                <input type="number" class="form-control" id="interval" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="intervalType" class="form-label">Einheit</label>
+                                <select class="form-select" id="intervalType">
+                                    <option value="months">Monate</option>
+                                    <option value="years">Jahre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="mileageInterval" class="form-label">Kilometerintervall (optional)</label>
+                            <input type="number" class="form-control" id="mileageInterval" placeholder="z.B. 10000">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveMaintenanceBtn">Hinzufügen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal für Fahrzeug löschen -->
+    <div class="modal fade" id="deleteCarModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Fahrzeug löschen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="deleteCarText"></p>
+                    <div class="alert alert-warning">
+                        <small>Alle zugehörigen Wartungen werden ebenfalls gelöscht.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Löschen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

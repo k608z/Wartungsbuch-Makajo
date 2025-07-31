@@ -1,573 +1,637 @@
-const { useState, useEffect } = React;
-
-const AutoWartungApp = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [cars, setCars] = useState([
-    {
-      id: 1,
-      model: 'BMW 320i',
-      year: 2019,
-      mileage: 85000,
-      selected: true
-    }
-  ]);
-  const [maintenances, setMaintenances] = useState([
-    {
-      id: 1,
-      carId: 1,
-      type: 'Ölwechsel',
-      lastDate: '2024-06-15',
-      nextDate: '2024-12-15',
-      interval: 6,
-      intervalType: 'months',
-      mileageInterval: 10000,
-      completed: false
-    },
-    {
-      id: 2,
-      carId: 1,
-      type: 'TÜV',
-      lastDate: '2023-08-20',
-      nextDate: '2025-08-20',
-      interval: 24,
-      intervalType: 'months',
-      completed: false
-    },
-    {
-      id: 3,
-      carId: 1,
-      type: 'Inspektion',
-      lastDate: '2024-03-10',
-      nextDate: '2025-03-10',
-      interval: 12,
-      intervalType: 'months',
-      mileageInterval: 15000,
-      completed: false
-    }
-  ]);
-  const [showAddCar, setShowAddCar] = useState(false);
-  const [showAddMaintenance, setShowAddMaintenance] = useState(false);
-  const [newCar, setNewCar] = useState({ model: '', year: '', mileage: '' });
-  const [newMaintenance, setNewMaintenance] = useState({
-    type: '',
-    lastDate: '',
-    interval: '',
-    intervalType: 'months',
-    mileageInterval: ''
-  });
-  const [carToDelete, setCarToDelete] = useState(null);
-
-  const getSelectedCar = () => cars.find(car => car.selected);
-
-  const getMaintenanceStatus = (maintenance) => {
-    const today = new Date();
-    const nextDate = new Date(maintenance.nextDate);
-    const diffTime = nextDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (maintenance.completed) return 'completed';
-    if (diffDays < 0) return 'overdue';
-    if (diffDays <= 30) return 'due-soon';
-    return 'ok';
-  };
-
-  const getStatusClass = (status) => {
-    return `maintenance-item status-${status}`;
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'completed': return 'Erledigt';
-      case 'overdue': return 'Überfällig';
-      case 'due-soon': return 'Steht bald an';
-      default: return 'OK';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'completed': return React.createElement('span', { className: 'icon icon-check' });
-      case 'overdue': return React.createElement('span', { className: 'icon icon-warning' });
-      case 'due-soon': return React.createElement('span', { className: 'icon icon-clock' });
-      default: return React.createElement('span', { className: 'icon icon-check' });
-    }
-  };
-
-  const addCar = () => {
-    if (newCar.model && newCar.year && newCar.mileage) {
-      const car = {
-        id: Date.now(),
-        model: newCar.model,
-        year: parseInt(newCar.year),
-        mileage: parseInt(newCar.mileage),
-        selected: cars.length === 0
-      };
-      setCars([...cars, car]);
-      setNewCar({ model: '', year: '', mileage: '' });
-      setShowAddCar(false);
-    }
-  };
-
-  const addMaintenance = () => {
-    const selectedCar = getSelectedCar();
-    if (newMaintenance.type && newMaintenance.lastDate && newMaintenance.interval && selectedCar) {
-      const lastDate = new Date(newMaintenance.lastDate);
-      const nextDate = new Date(lastDate);
-      
-      if (newMaintenance.intervalType === 'months') {
-        nextDate.setMonth(nextDate.getMonth() + parseInt(newMaintenance.interval));
-      } else {
-        nextDate.setFullYear(nextDate.getFullYear() + parseInt(newMaintenance.interval));
-      }
-
-      const maintenance = {
-        id: Date.now(),
-        carId: selectedCar.id,
-        type: newMaintenance.type,
-        lastDate: newMaintenance.lastDate,
-        nextDate: nextDate.toISOString().split('T')[0],
-        interval: parseInt(newMaintenance.interval),
-        intervalType: newMaintenance.intervalType,
-        mileageInterval: newMaintenance.mileageInterval ? parseInt(newMaintenance.mileageInterval) : null,
-        completed: false
-      };
-      
-      setMaintenances([...maintenances, maintenance]);
-      setNewMaintenance({
-        type: '',
-        lastDate: '',
-        interval: '',
-        intervalType: 'months',
-        mileageInterval: ''
-      });
-      setShowAddMaintenance(false);
-    }
-  };
-
-  const markAsCompleted = (id) => {
-    setMaintenances(maintenances.map(m => 
-      m.id === id ? { ...m, completed: !m.completed } : m
-    ));
-  };
-
-  const selectCar = (carId) => {
-    setCars(cars.map(car => ({ ...car, selected: car.id === carId })));
-  };
-
-  const deleteCar = (carId) => {
-    // Wartungen des Fahrzeugs auch löschen
-    setMaintenances(maintenances.filter(m => m.carId !== carId));
-    
-    // Fahrzeug löschen
-    const remainingCars = cars.filter(car => car.id !== carId);
-    setCars(remainingCars);
-    
-    // Wenn das gelöschte Fahrzeug ausgewählt war, das erste verbleibende auswählen
-    const deletedCar = cars.find(car => car.id === carId);
-    if (deletedCar && deletedCar.selected && remainingCars.length > 0) {
-      remainingCars[0].selected = true;
-      setCars(remainingCars);
-    }
-    
-    setCarToDelete(null);
-  };
-
-  const getCarMaintenances = () => {
-    const selectedCar = getSelectedCar();
-    return selectedCar ? maintenances.filter(m => m.carId === selectedCar.id) : [];
-  };
-
-  const renderOverview = () => {
-    const selectedCar = getSelectedCar();
-    const carMaintenances = getCarMaintenances();
-    
-    return React.createElement('div', { className: 'main-content' },
-      React.createElement('div', { className: 'card' },
-        React.createElement('h2', { className: 'card-title' },
-          React.createElement('span', { className: 'icon icon-car' }),
-          'Aktuelles Fahrzeug'
-        ),
-        selectedCar ? 
-          React.createElement('div', { className: 'car-info' },
-            React.createElement('h3', null, selectedCar.model),
-            React.createElement('p', null, `Baujahr: ${selectedCar.year}`),
-            React.createElement('p', null, `Laufleistung: ${selectedCar.mileage.toLocaleString()} km`)
-          ) :
-          React.createElement('p', { style: { color: '#6b7280' } }, 'Kein Fahrzeug ausgewählt')
-      ),
-      React.createElement('div', { className: 'card' },
-        React.createElement('h2', { className: 'card-title' },
-          React.createElement('span', { className: 'icon icon-wrench' }),
-          'Wartungsübersicht'
-        ),
-        React.createElement('div', null,
-          carMaintenances.map(maintenance => {
-            const status = getMaintenanceStatus(maintenance);
-            return React.createElement('div', { 
-              key: maintenance.id, 
-              className: getStatusClass(status)
+// Auto Wartungs-Manager - Vanilla JavaScript Version
+class AutoWartungApp {
+    constructor() {
+        this.activeTab = 'overview';
+        this.currentDate = new Date();
+        this.editingCarId = null;
+        this.carToDelete = null;
+        
+        // Initial data
+        this.cars = [
+            {
+                id: 1,
+                model: 'BMW 320i',
+                year: 2019,
+                mileage: 85000,
+                selected: true
+            }
+        ];
+        
+        this.maintenances = [
+            {
+                id: 1,
+                carId: 1,
+                type: 'Ölwechsel',
+                lastDate: '2024-06-15',
+                nextDate: '2024-12-15',
+                interval: 6,
+                intervalType: 'months',
+                mileageInterval: 10000,
+                completed: false
             },
-              React.createElement('div', { className: 'maintenance-info' },
-                React.createElement('h3', null,
-                  getStatusIcon(status),
-                  maintenance.type
-                ),
-                React.createElement('p', null, `Letzter Termin: ${new Date(maintenance.lastDate).toLocaleDateString('de-DE')}`),
-                React.createElement('p', null, `Nächster Termin: ${new Date(maintenance.nextDate).toLocaleDateString('de-DE')}`)
-              ),
-              React.createElement('div', { className: 'maintenance-actions' },
-                React.createElement('span', { className: 'status-badge' }, getStatusText(status)),
-                React.createElement('button', {
-                  onClick: () => markAsCompleted(maintenance.id),
-                  className: 'btn btn-primary btn-small'
-                }, maintenance.completed ? 'Rückgängig' : 'Erledigt')
-              )
-            );
-          })
-        )
-      )
-    );
-  };
-
-  const renderCalendar = () => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay();
-
-    const carMaintenances = getCarMaintenances();
-    const maintenancesByDate = {};
-    
-    carMaintenances.forEach(maintenance => {
-      const date = new Date(maintenance.nextDate);
-      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
-        const day = date.getDate();
-        if (!maintenancesByDate[day]) maintenancesByDate[day] = [];
-        maintenancesByDate[day].push(maintenance);
-      }
-    });
-
-    const days = [];
-    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-                      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-
-    // Empty cells for days before month start
-    for (let i = 0; i < startingDay; i++) {
-      days.push(React.createElement('div', { key: `empty-${i}`, className: 'calendar-day' }));
-    }
-
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dayMaintenances = maintenancesByDate[day] || [];
-      const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
-      
-      days.push(
-        React.createElement('div', { 
-          key: day, 
-          className: `calendar-day ${isToday ? 'today' : ''}` 
-        },
-          React.createElement('div', { className: 'calendar-day-number' }, day),
-          React.createElement('div', null,
-            dayMaintenances.map(maintenance => {
-              const status = getMaintenanceStatus(maintenance);
-              return React.createElement('div', { 
-                key: maintenance.id, 
-                className: `calendar-maintenance status-${status}` 
-              }, maintenance.type);
-            })
-          )
-        )
-      );
-    }
-
-    return React.createElement('div', { className: 'main-content' },
-      React.createElement('div', { className: 'card' },
-        React.createElement('h2', { className: 'card-title' },
-          React.createElement('span', { className: 'icon icon-calendar' }),
-          `Wartungskalender - ${monthNames[currentMonth]} ${currentYear}`
-        ),
-        React.createElement('div', { className: 'calendar-grid' },
-          ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'].map(day =>
-            React.createElement('div', { key: day, className: 'calendar-header' }, day)
-          ),
-          ...days
-        )
-      )
-    );
-  };
-
-  const renderCars = () => {
-    return React.createElement('div', { className: 'main-content' },
-      React.createElement('div', { className: 'card' },
-        React.createElement('div', { className: 'card-header' },
-          React.createElement('h2', { className: 'card-title' },
-            React.createElement('span', { className: 'icon icon-car' }),
-            'Meine Fahrzeuge'
-          ),
-          React.createElement('button', {
-            onClick: () => setShowAddCar(true),
-            className: 'btn btn-primary'
-          },
-            React.createElement('span', { className: 'icon icon-plus' }),
-            'Fahrzeug hinzufügen'
-          )
-        ),
-        React.createElement('div', { className: 'cars-grid' },
-          cars.map(car =>
-            React.createElement('div', {
-              key: car.id,
-              className: `car-card ${car.selected ? 'selected' : ''}`
+            {
+                id: 2,
+                carId: 1,
+                type: 'TÜV',
+                lastDate: '2023-08-20',
+                nextDate: '2025-08-20',
+                interval: 24,
+                intervalType: 'months',
+                completed: false
             },
-              React.createElement('div', {
-                onClick: () => selectCar(car.id),
-                style: { cursor: 'pointer', flex: 1 }
-              },
-                React.createElement('h3', null, car.model),
-                React.createElement('p', null, `Baujahr: ${car.year}`),
-                React.createElement('p', null, `Laufleistung: ${car.mileage.toLocaleString()} km`),
-                car.selected && React.createElement('p', { className: 'selected-indicator' }, '✓ Ausgewählt')
-              ),
-              React.createElement('div', { className: 'car-card-actions' },
-                React.createElement('button', {
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    setCarToDelete(car.id);
-                  },
-                  className: 'btn-delete',
-                  title: 'Fahrzeug löschen'
-                },
-                  React.createElement('span', { className: 'icon icon-trash' })
-                )
-              )
-            )
-          )
-        )
-      ),
-      
-      // Bestätigungsdialog für Fahrzeug löschen
-      carToDelete && React.createElement('div', { className: 'modal-overlay' },
-        React.createElement('div', { className: 'modal modal-small' },
-          React.createElement('h3', null, 'Fahrzeug löschen'),
-          React.createElement('p', { style: { marginBottom: '1rem', color: '#6b7280' } },
-            `Möchten Sie das Fahrzeug "${cars.find(c => c.id === carToDelete)?.model}" wirklich löschen?`
-          ),
-          React.createElement('p', { style: { marginBottom: '1.5rem', color: '#ef4444', fontSize: '0.875rem' } },
-            'Alle zugehörigen Wartungen werden ebenfalls gelöscht.'
-          ),
-          React.createElement('div', { className: 'modal-actions' },
-            React.createElement('button', {
-              onClick: () => setCarToDelete(null),
-              className: 'btn-text'
-            }, 'Abbrechen'),
-            React.createElement('button', {
-              onClick: () => deleteCar(carToDelete),
-              className: 'btn btn-danger'
-            }, 'Löschen')
-          )
-        )
-      ),
-      showAddCar && React.createElement('div', { className: 'modal-overlay' },
-        React.createElement('div', { className: 'modal' },
-          React.createElement('h3', null, 'Neues Fahrzeug hinzufügen'),
-          React.createElement('div', { className: 'modal-form' },
-            React.createElement('input', {
-              type: 'text',
-              placeholder: 'Modell (z.B. BMW 320i)',
-              value: newCar.model,
-              onChange: (e) => setNewCar({...newCar, model: e.target.value}),
-              className: 'form-input'
-            }),
-            React.createElement('input', {
-              type: 'number',
-              placeholder: 'Baujahr',
-              value: newCar.year,
-              onChange: (e) => setNewCar({...newCar, year: e.target.value}),
-              className: 'form-input'
-            }),
-            React.createElement('input', {
-              type: 'number',
-              placeholder: 'Laufleistung (km)',
-              value: newCar.mileage,
-              onChange: (e) => setNewCar({...newCar, mileage: e.target.value}),
-              className: 'form-input'
-            })
-          ),
-          React.createElement('div', { className: 'modal-actions' },
-            React.createElement('button', {
-              onClick: () => setShowAddCar(false),
-              className: 'btn-text'
-            }, 'Abbrechen'),
-            React.createElement('button', {
-              onClick: addCar,
-              className: 'btn btn-primary'
-            }, 'Hinzufügen')
-          )
-        )
-      )
-    );
-  };
-
-  const renderMaintenance = () => {
-    const carMaintenances = getCarMaintenances();
-    const selectedCar = getSelectedCar();
-    
-    return React.createElement('div', { className: 'main-content' },
-      React.createElement('div', { className: 'card' },
-        React.createElement('div', { className: 'card-header' },
-          React.createElement('h2', { className: 'card-title' },
-            React.createElement('span', { className: 'icon icon-wrench' }),
-            'Wartungen verwalten'
-          ),
-          React.createElement('button', {
-            onClick: () => setShowAddMaintenance(true),
-            className: 'btn btn-primary'
-          },
-            React.createElement('span', { className: 'icon icon-plus' }),
-            'Wartung hinzufügen'
-          )
-        ),
-        React.createElement('div', null,
-          carMaintenances.map(maintenance => {
-            const status = getMaintenanceStatus(maintenance);
-            return React.createElement('div', { 
-              key: maintenance.id, 
-              className: getStatusClass(status)
-            },
-              React.createElement('div', { className: 'maintenance-info' },
-                React.createElement('h3', null,
-                  getStatusIcon(status),
-                  maintenance.type
-                ),
-                React.createElement('p', null, `Letzter Service: ${new Date(maintenance.lastDate).toLocaleDateString('de-DE')}`),
-                React.createElement('p', null, `Nächster Service: ${new Date(maintenance.nextDate).toLocaleDateString('de-DE')}`),
-                React.createElement('p', null, `Intervall: ${maintenance.interval} ${maintenance.intervalType === 'months' ? 'Monate' : 'Jahre'}`),
-                maintenance.mileageInterval && 
-                  React.createElement('p', null, `Oder alle ${maintenance.mileageInterval.toLocaleString()} km`)
-              ),
-              React.createElement('div', { className: 'maintenance-actions' },
-                React.createElement('span', { className: 'status-badge' }, getStatusText(status)),
-                React.createElement('button', {
-                  onClick: () => markAsCompleted(maintenance.id),
-                  className: 'btn btn-primary btn-small'
-                }, maintenance.completed ? 'Rückgängig' : 'Erledigt')
-              )
-            );
-          })
-        )
-      ),
-      
-      // HIER WAR DAS FEHLENDE MODAL!
-      showAddMaintenance && React.createElement('div', { className: 'modal-overlay' },
-        React.createElement('div', { className: 'modal' },
-          React.createElement('h3', null, 'Neue Wartung hinzufügen'),
-          selectedCar ? 
-            React.createElement('div', null,
-              React.createElement('p', { style: { marginBottom: '1rem', color: '#6b7280' } }, 
-                `Für: ${selectedCar.model}`
-              ),
-              React.createElement('div', { className: 'modal-form' },
-                React.createElement('input', {
-                  type: 'text',
-                  placeholder: 'Wartungstyp (z.B. Ölwechsel, Inspektion)',
-                  value: newMaintenance.type,
-                  onChange: (e) => setNewMaintenance({...newMaintenance, type: e.target.value}),
-                  className: 'form-input'
-                }),
-                React.createElement('input', {
-                  type: 'date',
-                  placeholder: 'Letztes Wartungsdatum',
-                  value: newMaintenance.lastDate,
-                  onChange: (e) => setNewMaintenance({...newMaintenance, lastDate: e.target.value}),
-                  className: 'form-input'
-                }),
-                React.createElement('div', { className: 'form-row' },
-                  React.createElement('input', {
-                    type: 'number',
-                    placeholder: 'Intervall',
-                    value: newMaintenance.interval,
-                    onChange: (e) => setNewMaintenance({...newMaintenance, interval: e.target.value}),
-                    className: 'form-input'
-                  }),
-                  React.createElement('select', {
-                    value: newMaintenance.intervalType,
-                    onChange: (e) => setNewMaintenance({...newMaintenance, intervalType: e.target.value}),
-                    className: 'form-select'
-                  },
-                    React.createElement('option', { value: 'months' }, 'Monate'),
-                    React.createElement('option', { value: 'years' }, 'Jahre')
-                  )
-                ),
-                React.createElement('input', {
-                  type: 'number',
-                  placeholder: 'Kilometerintervall (optional)',
-                  value: newMaintenance.mileageInterval,
-                  onChange: (e) => setNewMaintenance({...newMaintenance, mileageInterval: e.target.value}),
-                  className: 'form-input'
-                })
-              )
-            ) :
-            React.createElement('p', { style: { color: '#ef4444', marginBottom: '1rem' } }, 
-              'Bitte wählen Sie zuerst ein Fahrzeug aus.'
-            ),
-          React.createElement('div', { className: 'modal-actions' },
-            React.createElement('button', {
-              onClick: () => setShowAddMaintenance(false),
-              className: 'btn-text'
-            }, 'Abbrechen'),
-            React.createElement('button', {
-              onClick: addMaintenance,
-              className: 'btn btn-primary',
-              disabled: !selectedCar
-            }, 'Hinzufügen')
-          )
-        )
-      )
-    );
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
-        return renderOverview();
-      case 'calendar':
-        return renderCalendar();
-      case 'cars':
-        return renderCars();
-      case 'maintenance':
-        return renderMaintenance();
-      default:
-        return renderOverview();
+            {
+                id: 3,
+                carId: 1,
+                type: 'Inspektion',
+                lastDate: '2024-03-10',
+                nextDate: '2025-03-10',
+                interval: 12,
+                intervalType: 'months',
+                mileageInterval: 15000,
+                completed: false
+            }
+        ];
+        
+        this.init();
     }
-  };
+    
+    init() {
+        this.bindEvents();
+        this.renderContent();
+    }
+    
+    bindEvents() {
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setActiveTab(e.target.closest('.tab-btn').dataset.tab);
+            });
+        });
+        
+        // Modal events
+        document.getElementById('saveCarBtn').addEventListener('click', () => this.addCar());
+        document.getElementById('saveEditCarBtn').addEventListener('click', () => this.editCar());
+        document.getElementById('saveMaintenanceBtn').addEventListener('click', () => this.addMaintenance());
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.deleteCar());
+        
+        // Calendar navigation - will be bound dynamically
+    }
+    
+    setActiveTab(tab) {
+        this.activeTab = tab;
+        
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+        
+        this.renderContent();
+    }
+    
+    renderContent() {
+        const content = document.getElementById('main-content');
+        content.innerHTML = '';
+        content.className = 'main-content fade-in';
+        
+        switch (this.activeTab) {
+            case 'overview':
+                this.renderOverview();
+                break;
+            case 'calendar':
+                this.renderCalendar();
+                break;
+            case 'cars':
+                this.renderCars();
+                break;
+            case 'maintenance':
+                this.renderMaintenance();
+                break;
+        }
+    }
+    
+    renderOverview() {
+        const selectedCar = this.getSelectedCar();
+        const carMaintenances = this.getCarMaintenances();
+        
+        const content = document.getElementById('main-content');
+        content.innerHTML = `
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <i class="bi bi-car-front-fill me-2"></i>
+                                    Aktuelles Fahrzeug
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                ${selectedCar ? `
+                                    <div class="car-info-box">
+                                        <h4>${selectedCar.model}</h4>
+                                        <p><strong>Baujahr:</strong> ${selectedCar.year}</p>
+                                        <p><strong>Laufleistung:</strong> ${selectedCar.mileage.toLocaleString()} km</p>
+                                    </div>
+                                ` : `
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        Kein Fahrzeug ausgewählt
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <i class="bi bi-tools me-2"></i>
+                                    Wartungsübersicht
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                ${carMaintenances.length > 0 ? 
+                                    carMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
+                                    '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine Wartungen für dieses Fahrzeug</div>'
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.bindMaintenanceEvents();
+    }
+    
+    renderCalendar() {
+        const content = document.getElementById('main-content');
+        const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                           'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        
+        content.innerHTML = `
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="calendar-header">
+                            <h4 class="card-title mb-0">
+                                <i class="bi bi-calendar3 me-2"></i>
+                                Wartungskalender
+                            </h4>
+                            <div class="calendar-nav">
+                                <button class="btn btn-outline-primary btn-sm" id="prevMonth">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <div class="calendar-month-year">
+                                    ${monthNames[this.currentDate.getMonth()]} ${this.currentDate.getFullYear()}
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" id="nextMonth">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        ${this.renderCalendarGrid()}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Bind calendar navigation
+        document.getElementById('prevMonth').addEventListener('click', () => this.navigateMonth(-1));
+        document.getElementById('nextMonth').addEventListener('click', () => this.navigateMonth(1));
+    }
+    
+    renderCalendarGrid() {
+        const currentMonth = this.currentDate.getMonth();
+        const currentYear = this.currentDate.getFullYear();
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDay = firstDay.getDay();
+        
+        const carMaintenances = this.getCarMaintenances();
+        const maintenancesByDate = {};
+        
+        carMaintenances.forEach(maintenance => {
+            const date = new Date(maintenance.nextDate);
+            const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+            if (!maintenancesByDate[dateKey]) maintenancesByDate[dateKey] = [];
+            maintenancesByDate[dateKey].push(maintenance);
+        });
+        
+        let html = '<div class="calendar-grid">';
+        
+        // Header
+        ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'].forEach(day => {
+            html += `<div class="calendar-header-cell">${day}</div>`;
+        });
+        
+        // Previous month days
+        const prevMonth = new Date(currentYear, currentMonth - 1, 0);
+        const prevMonthDays = prevMonth.getDate();
+        for (let i = startingDay - 1; i >= 0; i--) {
+            const day = prevMonthDays - i;
+            const dateKey = `${currentYear}-${currentMonth - 1}-${day}`;
+            const dayMaintenances = maintenancesByDate[dateKey] || [];
+            
+            html += `
+                <div class="calendar-day other-month">
+                    <div class="calendar-day-number">${day}</div>
+                    ${dayMaintenances.map(m => `
+                        <div class="calendar-maintenance status-${this.getMaintenanceStatus(m)}" 
+                             title="${m.type} - ${new Date(m.nextDate).toLocaleDateString('de-DE')}">
+                            ${m.type}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Current month days
+        const today = new Date();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = `${currentYear}-${currentMonth}-${day}`;
+            const dayMaintenances = maintenancesByDate[dateKey] || [];
+            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+            
+            html += `
+                <div class="calendar-day ${isToday ? 'today' : ''}">
+                    <div class="calendar-day-number">${day}</div>
+                    ${dayMaintenances.map(m => `
+                        <div class="calendar-maintenance status-${this.getMaintenanceStatus(m)}" 
+                             title="${m.type} - ${new Date(m.nextDate).toLocaleDateString('de-DE')}">
+                            ${m.type}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Next month days
+        const totalCells = Math.ceil((startingDay + daysInMonth) / 7) * 7;
+        const remainingCells = totalCells - (startingDay + daysInMonth);
+        
+        for (let day = 1; day <= remainingCells; day++) {
+            const dateKey = `${currentYear}-${currentMonth + 1}-${day}`;
+            const dayMaintenances = maintenancesByDate[dateKey] || [];
+            
+            html += `
+                <div class="calendar-day other-month">
+                    <div class="calendar-day-number">${day}</div>
+                    ${dayMaintenances.map(m => `
+                        <div class="calendar-maintenance status-${this.getMaintenanceStatus(m)}" 
+                             title="${m.type} - ${new Date(m.nextDate).toLocaleDateString('de-DE')}">
+                            ${m.type}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    renderCars() {
+        const content = document.getElementById('main-content');
+        content.innerHTML = `
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-car-front-fill me-2"></i>
+                            Meine Fahrzeuge
+                        </h4>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCarModal">
+                            <i class="bi bi-plus-lg me-2"></i>
+                            Fahrzeug hinzufügen
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            ${this.cars.map(car => `
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card car-card ${car.selected ? 'selected' : ''}" 
+                                         onclick="app.selectCar(${car.id})">
+                                        <div class="card-body">
+                                            ${car.selected ? '<span class="selected-badge"><i class="bi bi-check-lg"></i> Ausgewählt</span>' : ''}
+                                            <h5 class="card-title">${car.model}</h5>
+                                            <p class="card-text text-muted mb-1">
+                                                <strong>Baujahr:</strong> ${car.year}
+                                            </p>
+                                            <p class="card-text text-muted">
+                                                <strong>Laufleistung:</strong> ${car.mileage.toLocaleString()} km
+                                            </p>
+                                            <div class="car-actions">
+                                                <button class="btn btn-icon btn-edit" 
+                                                        onclick="event.stopPropagation(); app.startEditCar(${car.id})"
+                                                        title="Bearbeiten">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-icon btn-delete" 
+                                                        onclick="event.stopPropagation(); app.startDeleteCar(${car.id})"
+                                                        title="Löschen">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    renderMaintenance() {
+        const carMaintenances = this.getCarMaintenances();
+        const selectedCar = this.getSelectedCar();
+        
+        const content = document.getElementById('main-content');
+        content.innerHTML = `
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-tools me-2"></i>
+                            Wartungen verwalten
+                        </h4>
+                        <button class="btn btn-primary" onclick="app.showAddMaintenanceModal()">
+                            <i class="bi bi-plus-lg me-2"></i>
+                            Wartung hinzufügen
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        ${carMaintenances.length > 0 ? 
+                            carMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance, true)).join('') :
+                            '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine Wartungen für dieses Fahrzeug</div>'
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        this.bindMaintenanceEvents();
+    }
+    
+    renderMaintenanceItem(maintenance, detailed = false) {
+        const status = this.getMaintenanceStatus(maintenance);
+        const statusText = this.getStatusText(status);
+        const statusIcon = this.getStatusIcon(status);
+        
+        return `
+            <div class="card maintenance-card status-${status} mb-3">
+                <div class="maintenance-item">
+                    <div class="maintenance-info">
+                        <h5>
+                            <i class="bi ${statusIcon} me-2"></i>
+                            ${maintenance.type}
+                        </h5>
+                        <small>Letzter Service: ${new Date(maintenance.lastDate).toLocaleDateString('de-DE')}</small>
+                        <small>Nächster Service: ${new Date(maintenance.nextDate).toLocaleDateString('de-DE')}</small>
+                        ${detailed ? `
+                            <small>Intervall: ${maintenance.interval} ${maintenance.intervalType === 'months' ? 'Monate' : 'Jahre'}</small>
+                            ${maintenance.mileageInterval ? `<small>Oder alle ${maintenance.mileageInterval.toLocaleString()} km</small>` : ''}
+                        ` : ''}
+                    </div>
+                    <div class="maintenance-actions">
+                        <span class="badge status-badge status-${status}">${statusText}</span>
+                        <button class="btn btn-sm btn-primary" onclick="app.toggleMaintenanceCompleted(${maintenance.id})">
+                            ${maintenance.completed ? 'Rückgängig' : 'Erledigt'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Utility methods
+    getSelectedCar() {
+        return this.cars.find(car => car.selected);
+    }
+    
+    getCarMaintenances() {
+        const selectedCar = this.getSelectedCar();
+        return selectedCar ? this.maintenances.filter(m => m.carId === selectedCar.id) : [];
+    }
+    
+    getMaintenanceStatus(maintenance) {
+        const today = new Date();
+        const nextDate = new Date(maintenance.nextDate);
+        const diffTime = nextDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  return React.createElement('div', { className: 'app' },
-    React.createElement('nav', { className: 'tab-nav' },
-      React.createElement('button', {
-        className: activeTab === 'overview' ? 'active' : '',
-        onClick: () => setActiveTab('overview')
-      }, 'Übersicht'),
-      React.createElement('button', {
-        className: activeTab === 'calendar' ? 'active' : '',
-        onClick: () => setActiveTab('calendar')
-      }, 'Kalender'),
-      React.createElement('button', {
-        className: activeTab === 'cars' ? 'active' : '',
-        onClick: () => setActiveTab('cars')
-      }, 'Fahrzeuge'),
-      React.createElement('button', {
-        className: activeTab === 'maintenance' ? 'active' : '',
-        onClick: () => setActiveTab('maintenance')
-      }, 'Wartungen')
-    ),
-    renderContent()
-  );
-};
+        if (maintenance.completed) return 'completed';
+        if (diffDays < 0) return 'overdue';
+        if (diffDays <= 30) return 'due-soon';
+        return 'ok';
+    }
+    
+    getStatusText(status) {
+        switch (status) {
+            case 'completed': return 'Erledigt';
+            case 'overdue': return 'Überfällig';
+            case 'due-soon': return 'Steht bald an';
+            default: return 'OK';
+        }
+    }
+    
+    getStatusIcon(status) {
+        switch (status) {
+            case 'completed': return 'bi-check-circle-fill';
+            case 'overdue': return 'bi-exclamation-triangle-fill';
+            case 'due-soon': return 'bi-clock-fill';
+            default: return 'bi-check-circle';
+        }
+    }
+    
+    // Event handlers
+    bindMaintenanceEvents() {
+        // Events are bound via onclick attributes in the HTML
+    }
+    
+    // Car management
+    addCar() {
+        const model = document.getElementById('carModel').value.trim();
+        const year = parseInt(document.getElementById('carYear').value);
+        const mileage = parseInt(document.getElementById('carMileage').value);
+        
+        if (model && year && mileage) {
+            const car = {
+                id: Date.now(),
+                model: model,
+                year: year,
+                mileage: mileage,
+                selected: this.cars.length === 0
+            };
+            
+            this.cars.push(car);
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCarModal'));
+            modal.hide();
+            document.getElementById('addCarForm').reset();
+            
+            this.renderContent();
+        }
+    }
+    
+    startEditCar(carId) {
+        const car = this.cars.find(c => c.id === carId);
+        if (car) {
+            this.editingCarId = carId;
+            document.getElementById('editCarModel').value = car.model;
+            document.getElementById('editCarYear').value = car.year;
+            document.getElementById('editCarMileage').value = car.mileage;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editCarModal'));
+            modal.show();
+        }
+    }
+    
+    editCar() {
+        const model = document.getElementById('editCarModel').value.trim();
+        const year = parseInt(document.getElementById('editCarYear').value);
+        const mileage = parseInt(document.getElementById('editCarMileage').value);
+        
+        if (model && year && mileage && this.editingCarId) {
+            const carIndex = this.cars.findIndex(c => c.id === this.editingCarId);
+            if (carIndex !== -1) {
+                this.cars[carIndex] = {
+                    ...this.cars[carIndex],
+                    model: model,
+                    year: year,
+                    mileage: mileage
+                };
+                
+                // Close modal and reset
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editCarModal'));
+                modal.hide();
+                this.editingCarId = null;
+                
+                this.renderContent();
+            }
+        }
+    }
+    
+    startDeleteCar(carId) {
+        const car = this.cars.find(c => c.id === carId);
+        if (car) {
+            this.carToDelete = carId;
+            document.getElementById('deleteCarText').textContent = 
+                `Möchten Sie das Fahrzeug "${car.model}" wirklich löschen?`;
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteCarModal'));
+            modal.show();
+        }
+    }
+    
+    deleteCar() {
+        if (this.carToDelete) {
+            // Remove car and its maintenances
+            this.maintenances = this.maintenances.filter(m => m.carId !== this.carToDelete);
+            const remainingCars = this.cars.filter(car => car.id !== this.carToDelete);
+            
+            // If deleted car was selected, select the first remaining car
+            const deletedCar = this.cars.find(car => car.id === this.carToDelete);
+            if (deletedCar && deletedCar.selected && remainingCars.length > 0) {
+                remainingCars[0].selected = true;
+            }
+            
+            this.cars = remainingCars;
+            
+            // Close modal and reset
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCarModal'));
+            modal.hide();
+            this.carToDelete = null;
+            
+            this.renderContent();
+        }
+    }
+    
+    selectCar(carId) {
+        this.cars = this.cars.map(car => ({
+            ...car,
+            selected: car.id === carId
+        }));
+        this.renderContent();
+    }
+    
+    // Maintenance management
+    showAddMaintenanceModal() {
+        const selectedCar = this.getSelectedCar();
+        if (selectedCar) {
+            document.getElementById('selectedCarInfo').textContent = `Für: ${selectedCar.model}`;
+            const modal = new bootstrap.Modal(document.getElementById('addMaintenanceModal'));
+            modal.show();
+        } else {
+            alert('Bitte wählen Sie zuerst ein Fahrzeug aus.');
+        }
+    }
+    
+    addMaintenance() {
+        const selectedCar = this.getSelectedCar();
+        const type = document.getElementById('maintenanceType').value.trim();
+        const lastDate = document.getElementById('lastDate').value;
+        const interval = parseInt(document.getElementById('interval').value);
+        const intervalType = document.getElementById('intervalType').value;
+        const mileageInterval = document.getElementById('mileageInterval').value;
+        
+        if (type && lastDate && interval && selectedCar) {
+            const lastDateObj = new Date(lastDate);
+            const nextDate = new Date(lastDateObj);
+            
+            if (intervalType === 'months') {
+                nextDate.setMonth(nextDate.getMonth() + interval);
+            } else {
+                nextDate.setFullYear(nextDate.getFullYear() + interval);
+            }
+            
+            const maintenance = {
+                id: Date.now(),
+                carId: selectedCar.id,
+                type: type,
+                lastDate: lastDate,
+                nextDate: nextDate.toISOString().split('T')[0],
+                interval: interval,
+                intervalType: intervalType,
+                mileageInterval: mileageInterval ? parseInt(mileageInterval) : null,
+                completed: false
+            };
+            
+            this.maintenances.push(maintenance);
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addMaintenanceModal'));
+            modal.hide();
+            document.getElementById('addMaintenanceForm').reset();
+            
+            this.renderContent();
+        }
+    }
+    
+    toggleMaintenanceCompleted(maintenanceId) {
+        const maintenanceIndex = this.maintenances.findIndex(m => m.id === maintenanceId);
+        if (maintenanceIndex !== -1) {
+            this.maintenances[maintenanceIndex].completed = !this.maintenances[maintenanceIndex].completed;
+            this.renderContent();
+        }
+    }
+    
+    // Calendar navigation
+    navigateMonth(direction) {
+        const newDate = new Date(this.currentDate);
+        newDate.setMonth(newDate.getMonth() + direction);
+        this.currentDate = newDate;
+        this.renderContent();
+    }
+}
 
-// 🚀 App starten (wenn in index.html ein <div id="root"></div> vorhanden ist)
-ReactDOM.render(
-  React.createElement(AutoWartungApp),
-  document.getElementById('root')
-);
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.app = new AutoWartungApp();
+});
