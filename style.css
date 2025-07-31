@@ -221,8 +221,14 @@ body.dark-mode .maintenance-card.status-ok {
     position: relative;
 }
 
-body.dark-mode .car-card {
-    border-color: #333;
+body.dark-mode .car-card{
+    border-color: #ffffff;
+    color: #e0e0e0;
+}
+
+
+body.dark-mode .car-card .text-muted {
+    color: #adb5bd !important;
 }
 
 .car-card:hover {
@@ -548,18 +554,22 @@ body.dark-mode .car-info-box {
 }
 
 .car-info-box h4 {
-    color: #0d6efd;
+    color: #061a39;
     margin-bottom: 0.5rem;
     font-weight: 600;
 }
 
+body.dark-mode .car-info-box h4 {
+    color: #ffffff;
+}
+
 .car-info-box p {
     margin-bottom: 0.25rem;
-    color: #515a63;
+    color: #3b526a7b;
 }
 
 body.dark-mode .car-info-box p {
-    color: #adb5bd;
+    color: #f4ecf5;
 }
 
 /* Responsive */
