@@ -30,7 +30,12 @@ class AutoWartungApp {
             { type: 'Zündkerzen', icon: 'bi-lightning', interval: 24, intervalType: 'months', mileageInterval: 30000 },
             { type: 'Batteriecheck', icon: 'bi-battery', interval: 12, intervalType: 'months' },
             { type: 'Bremsen prüfen', icon: 'bi-disc', interval: 12, intervalType: 'months' },
-            { type: 'Keilriemen', icon: 'bi-arrow-repeat', interval: 36, intervalType: 'months' }
+            { type: 'Keilriemen', icon: 'bi-arrow-repeat', interval: 36, intervalType: 'months' },
+            // NEUE EINTRÄGE FÜR VERSCHLEISSTEILE
+            { type: 'Bremsbeläge prüfen', icon: 'bi-shield-fill-exclamation', mileageInterval: 25000 },
+            { type: 'Bremsscheiben prüfen', icon: 'bi-disc-fill', mileageInterval: 50000 },
+            { type: 'Traggelenke prüfen', icon: 'bi-gear-wide-connected', mileageInterval: 80000 },
+            { type: 'Reifen prüfen', icon: 'bi-tire-fill', mileageInterval: 40000 }
         ];
         
         // Initial data
@@ -210,9 +215,12 @@ class AutoWartungApp {
         const presetsDiv = document.getElementById('maintenancePresets');
         if (!presetsDiv) return;
         
-        presetsDiv.innerHTML = this.maintenancePresets.slice(0, 6).map(preset => `
+        // Filter out presets without mileageInterval for the main suggestions
+        const mileagePresets = this.maintenancePresets.filter(p => p.mileageInterval);
+
+        presetsDiv.innerHTML = mileagePresets.slice(0, 6).map(preset => `
             <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
-                    onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval}, '${preset.intervalType}', ${preset.mileageInterval || 'null'})">
+                    onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval || 'null'}, '${preset.intervalType || 'null'}', ${preset.mileageInterval || 'null'})">
                 <i class="${preset.icon} me-1"></i>
                 ${preset.type}
             </button>
@@ -221,11 +229,9 @@ class AutoWartungApp {
     
     selectMaintenancePreset(type, interval, intervalType, mileageInterval) {
         document.getElementById('maintenanceType').value = type;
-        document.getElementById('interval').value = interval;
-        document.getElementById('intervalType').value = intervalType;
-        if (mileageInterval && mileageInterval !== 'null') {
-            document.getElementById('mileageInterval').value = mileageInterval;
-        }
+        if (interval !== 'null') document.getElementById('interval').value = interval;
+        if (intervalType !== 'null') document.getElementById('intervalType').value = intervalType;
+        if (mileageInterval !== 'null') document.getElementById('mileageInterval').value = mileageInterval;
         this.hideSuggestions();
     }
     
@@ -236,7 +242,7 @@ class AutoWartungApp {
         if (suggestions.length > 0) {
             suggestionsDiv.innerHTML = suggestions.map(preset => `
                 <button type="button" class="suggestion-item" 
-                        onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval}, '${preset.intervalType}', ${preset.mileageInterval || 'null'})">
+                        onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval || 'null'}, '${preset.intervalType || 'null'}', ${preset.mileageInterval || 'null'})">
                     <i class="${preset.icon} me-2"></i>
                     ${preset.type}
                 </button>
@@ -299,7 +305,14 @@ class AutoWartungApp {
     
     renderOverview() {
         const selectedCar = this.getSelectedCar();
-        const carMaintenances = this.getCarMaintenances();
+        let carMaintenances = [];
+
+        if (selectedCar) {
+            carMaintenances = this.getCarMaintenances();
+            
+            // Filter out completed recommended maintenances
+            carMaintenances = carMaintenances.filter(m => m.status !== 'recommended' || !m.completed);
+        }
         
         const content = document.getElementById('main-content');
         content.innerHTML = `
@@ -428,7 +441,7 @@ class AutoWartungApp {
         const daysInMonth = lastDay.getDate();
         const startingDay = firstDay.getDay();
         
-        const carMaintenances = this.getCarMaintenances();
+        const carMaintenances = this.getCarMaintenances().filter(m => m.status !== 'recommended');
         const maintenancesByDate = {};
         
         carMaintenances.forEach(maintenance => {
@@ -539,8 +552,7 @@ class AutoWartungApp {
                                                 <strong>Baujahr:</strong> ${car.year}
                                             </p>
                                             <p class="card-text text-muted">
-                                                <strong>Laufleistung:</strong> ${car.mileage.toLocaleString()} km
-                                            </p>
+                                                <strong>Laufleistung:</strong> ${car.mileage.toLocaleString()} km</p>
                                             <div class="car-actions">
                                                 <button class="btn btn-icon btn-edit" 
                                                         onclick="event.stopPropagation(); app.startEditCar(${car.id})"
@@ -565,7 +577,7 @@ class AutoWartungApp {
     }
     
     renderMaintenance() {
-        const carMaintenances = this.getCarMaintenances();
+        const carMaintenances = this.getCarMaintenances().filter(m => m.status !== 'recommended');
         const selectedCar = this.getSelectedCar();
         
         const content = document.getElementById('main-content');
@@ -632,8 +644,7 @@ class AutoWartungApp {
                         </div>
                         
                         <div class="workshop-list" id="workshopsList" style="display: none;">
-                            <!-- Workshop list will be populated here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -652,13 +663,14 @@ class AutoWartungApp {
                         <h5>
                             <i class="bi ${statusIcon} me-2"></i>
                             ${maintenance.type}
+                            ${maintenance.status === 'recommended' ? '<span class="badge bg-warning text-dark ms-2">Empfohlen</span>' : ''}
                         </h5>
-                        <small>Letzter Service: ${new Date(maintenance.lastDate).toLocaleDateString('de-DE')}</small>
-                        <small>Nächster Service: ${new Date(maintenance.nextDate).toLocaleDateString('de-DE')}</small>
-                        ${detailed ? `
+                        <small>Letzter Service: ${maintenance.lastDate ? new Date(maintenance.lastDate).toLocaleDateString('de-DE') : 'Unbekannt'}</small>
+                        <small>Nächster Service: ${maintenance.nextDate ? new Date(maintenance.nextDate).toLocaleDateString('de-DE') : 'N/A'}</small>
+                        ${detailed && maintenance.interval ? `
                             <small>Intervall: ${maintenance.interval} ${maintenance.intervalType === 'months' ? 'Monate' : 'Jahre'}</small>
-                            ${maintenance.mileageInterval ? `<small>Oder alle ${maintenance.mileageInterval.toLocaleString()} km</small>` : ''}
                         ` : ''}
+                        ${detailed && maintenance.mileageInterval ? `<small>Oder alle ${maintenance.mileageInterval.toLocaleString()} km</small>` : ''}
                     </div>
                     <div class="maintenance-actions">
                         <span class="badge status-badge status-${status}">${statusText}</span>
@@ -682,12 +694,14 @@ class AutoWartungApp {
     }
     
     getMaintenanceStatus(maintenance) {
+        if (maintenance.completed) return 'completed';
+        if (maintenance.status === 'recommended') return 'recommended';
+
         const today = new Date();
         const nextDate = new Date(maintenance.nextDate);
         const diffTime = nextDate - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (maintenance.completed) return 'completed';
         if (diffDays < 0) return 'overdue';
         if (diffDays <= 30) return 'due-soon';
         return 'ok';
@@ -698,6 +712,7 @@ class AutoWartungApp {
             case 'completed': return 'Erledigt';
             case 'overdue': return 'Überfällig';
             case 'due-soon': return 'Steht bald an';
+            case 'recommended': return 'Empfohlen';
             default: return 'OK';
         }
     }
@@ -707,6 +722,7 @@ class AutoWartungApp {
             case 'completed': return 'bi-check-circle-fill';
             case 'overdue': return 'bi-exclamation-triangle-fill';
             case 'due-soon': return 'bi-clock-fill';
+            case 'recommended': return 'bi-lightbulb-fill';
             default: return 'bi-check-circle';
         }
     }
@@ -732,6 +748,31 @@ class AutoWartungApp {
             };
             
             this.cars.push(car);
+            
+            // NEUE LOGIK: Wartungsempfehlungen basierend auf der Laufleistung hinzufügen
+            const today = new Date();
+            this.maintenancePresets.forEach(preset => {
+                if (preset.mileageInterval && mileage >= preset.mileageInterval) {
+                    const existingMaintenance = this.maintenances.find(m => 
+                        m.carId === car.id && m.type === preset.type
+                    );
+                    if (!existingMaintenance) {
+                        const newMaintenance = {
+                            id: Date.now() + Math.random(), // Unique ID
+                            carId: car.id,
+                            type: preset.type,
+                            lastDate: null,
+                            nextDate: today.toISOString().split('T')[0],
+                            interval: preset.interval,
+                            intervalType: preset.intervalType,
+                            mileageInterval: preset.mileageInterval,
+                            completed: false,
+                            status: 'recommended'
+                        };
+                        this.maintenances.push(newMaintenance);
+                    }
+                }
+            });
             
             // Close modal and reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addCarModal'));
@@ -867,7 +908,8 @@ class AutoWartungApp {
                 interval: interval,
                 intervalType: intervalType,
                 mileageInterval: mileageInterval ? parseInt(mileageInterval) : null,
-                completed: false
+                completed: false,
+                status: null
             };
             
             this.maintenances.push(maintenance);
@@ -912,7 +954,17 @@ class AutoWartungApp {
             
             document.getElementById('completeMaintenanceText').textContent = 
                 `Wartung "${maintenance.type}" als erledigt markieren?`;
-            document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
+            
+            // Hide the next maintenance date field for recommended status
+            const newMaintenanceDateDiv = document.getElementById('newMaintenanceDate');
+            if (maintenance.status === 'recommended') {
+                newMaintenanceDateDiv.style.display = 'none';
+                document.getElementById('createNewMaintenance').checked = false;
+            } else {
+                newMaintenanceDateDiv.style.display = 'block';
+                document.getElementById('createNewMaintenance').checked = true;
+                document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
+            }
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('completeMaintenanceModal'));
@@ -920,21 +972,17 @@ class AutoWartungApp {
             
             // Bind checkbox event for this specific modal instance
             const checkbox = document.getElementById('createNewMaintenance');
-            const dateField = document.getElementById('newMaintenanceDate');
             
             // Remove existing event listener if any
             checkbox.removeEventListener('change', this.handleCheckboxChange);
             
             // Create new event handler
             this.handleCheckboxChange = function() {
-                dateField.style.display = this.checked ? 'block' : 'none';
+                newMaintenanceDateDiv.style.display = this.checked ? 'block' : 'none';
             };
             
             // Bind the event
             checkbox.addEventListener('change', this.handleCheckboxChange);
-            
-            // Initial state
-            dateField.style.display = checkbox.checked ? 'block' : 'none';
         }
     }
     
@@ -948,8 +996,8 @@ class AutoWartungApp {
                 // Mark current maintenance as completed
                 maintenance.completed = true;
                 
-                // Create new maintenance if requested
-                if (createNew && nextDate) {
+                // Create new maintenance if requested and if not a recommended maintenance
+                if (createNew && nextDate && maintenance.status !== 'recommended') {
                     const newMaintenance = {
                         id: Date.now(),
                         carId: maintenance.carId,
@@ -959,7 +1007,8 @@ class AutoWartungApp {
                         interval: maintenance.interval,
                         intervalType: maintenance.intervalType,
                         mileageInterval: maintenance.mileageInterval,
-                        completed: false
+                        completed: false,
+                        status: null
                     };
                     
                     this.maintenances.push(newMaintenance);
@@ -1141,7 +1190,7 @@ class AutoWartungApp {
         }).sort((a, b) => a.distance - b.distance);
         
         workshopsList.innerHTML = sortedWorkshops.map(workshop => `
-            <div class="workshop-item" onclick="app.showWorkshopDetails(${JSON.stringify(workshop).replace(/"/g, '&quot;')})">
+            <div class="workshop-item" onclick="app.showWorkshopDetails(${JSON.stringify(workshop).replace(/"/g, '"')})">
                 <div class="workshop-info">
                     <h6>${workshop.name}</h6>
                     <p><i class="bi bi-geo-alt me-1"></i>${workshop.vicinity}</p>

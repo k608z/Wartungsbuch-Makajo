@@ -10,7 +10,6 @@
 </head>
 <body>
     <div class="app">
-        <!-- Tab Navigation -->
         <nav class="tab-nav">
             <button class="tab-btn active" data-tab="overview">
                 <i class="bi bi-house-fill"></i> Übersicht
@@ -28,7 +27,6 @@
                 <i class="bi bi-geo-alt-fill"></i> Werkstätten
             </button>
             
-            <!-- Dark Mode Toggle Button -->
             <button class="dark-mode-toggle" id="darkModeToggle" title="Dark Mode umschalten">
                 <i class="bi bi-moon-fill" id="darkModeIcon"></i>
             </button>
@@ -39,13 +37,10 @@
             <div class="titelbild-text">Makajoha, der Wartungs-Manager für Leute die Ihr Auto lieben!</div>
         </header>
 
-        <!-- Main Content -->
         <div id="main-content" class="main-content">
-            <!-- Content wird durch JavaScript geladen -->
-        </div>
+            </div>
     </div>
 
-    <!-- Modal für Fahrzeug hinzufügen -->
     <div class="modal fade" id="addCarModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -77,7 +72,6 @@
         </div>
     </div>
 
-    <!-- Modal für Fahrzeug bearbeiten -->
     <div class="modal fade" id="editCarModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -109,7 +103,6 @@
         </div>
     </div>
 
-    <!-- Modal für Wartung hinzufügen -->
     <div class="modal fade" id="addMaintenanceModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -160,7 +153,6 @@
         </div>
     </div>
 
-    <!-- Modal für Fahrzeug löschen -->
     <div class="modal fade" id="deleteCarModal" tabindex="-1">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
@@ -182,7 +174,6 @@
         </div>
     </div>
 
-    <!-- Modal für Wartung abschließen -->
     <div class="modal fade" id="completeMaintenanceModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -214,7 +205,6 @@
         </div>
     </div>
 
-    <!-- Modal für Werkstatt-Details -->
     <div class="modal fade" id="workshopModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -223,8 +213,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="workshopModalBody">
-                    <!-- Werkstatt-Details werden hier eingefügt -->
-                </div>
+                    </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
                     <button type="button" class="btn btn-primary" id="getDirectionsBtn">Route anzeigen</button>
@@ -235,7 +224,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
-    <!-- Google Maps API - Ersetzen Sie YOUR_API_KEY mit Ihrem echten API-Schlüssel -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhFByDCtVZVnO5lteOgbbKPuw9jVeqpGE&libraries=places&callback=initMap"></script>
 </body>
 </html>

@@ -253,6 +253,16 @@ body.dark-mode .maintenance-card.status-ok {
     border-left-color: #6c757d;
 }
 
+.maintenance-card.status-recommended {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+body.dark-mode .maintenance-card.status-recommended {
+    background-color: #332a0a;
+    border-left-color: #ffc107;
+}
+
 /* Car Cards */
 .car-card {
     cursor: pointer;
@@ -419,6 +429,16 @@ body.dark-mode .status-ok {
     color: #adb5bd;
 }
 
+.status-recommended {
+    background-color: #ffc107;
+    color: #664d03;
+}
+
+body.dark-mode .status-recommended {
+    background-color: #332a0a;
+    color: #ffda6b;
+}
+
 /* Calendar Styles */
 .calendar-header {
     display: flex;
@@ -562,6 +582,16 @@ body.dark-mode .calendar-maintenance.status-due-soon {
 body.dark-mode .calendar-maintenance.status-ok {
     background-color: #2d2d2d;
     color: #adb5bd;
+}
+
+.calendar-maintenance.status-recommended {
+    background-color: #ffc107;
+    color: #664d03;
+}
+
+body.dark-mode .calendar-maintenance.status-recommended {
+    background-color: #332a0a;
+    color: #ffda6b;
 }
 
 /* Maintenance Item Styles */
@@ -880,12 +910,6 @@ body.dark-mode .loading-spinner {
 
 body.dark-mode .maps-error {
     color: #ff6b7a;
-}
-
-.maps-error i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    display: block;
 }
 
 /* Workshop Modal Styles */
