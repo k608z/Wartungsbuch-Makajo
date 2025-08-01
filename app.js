@@ -5,7 +5,24 @@ class AutoWartungApp {
         this.currentDate = new Date();
         this.editingCarId = null;
         this.carToDelete = null;
+        this.completingMaintenanceId = null;
         this.isDarkMode = false;
+        
+        // Wartungstyp-Vorschläge
+        this.maintenancePresets = [
+            { type: 'Ölwechsel', icon: 'bi-droplet-fill', interval: 6, intervalType: 'months', mileageInterval: 10000 },
+            { type: 'TÜV', icon: 'bi-shield-check', interval: 24, intervalType: 'months' },
+            { type: 'AU (Abgas)', icon: 'bi-cloud-haze2', interval: 24, intervalType: 'months' },
+            { type: 'Inspektion', icon: 'bi-tools', interval: 12, intervalType: 'months', mileageInterval: 15000 },
+            { type: 'Reifen wechseln', icon: 'bi-circle', interval: 6, intervalType: 'months' },
+            { type: 'Bremsflüssigkeit', icon: 'bi-droplet-half', interval: 24, intervalType: 'months' },
+            { type: 'Kühlmittel', icon: 'bi-thermometer-snow', interval: 36, intervalType: 'months' },
+            { type: 'Luftfilter', icon: 'bi-wind', interval: 12, intervalType: 'months', mileageInterval: 20000 },
+            { type: 'Zündkerzen', icon: 'bi-lightning', interval: 24, intervalType: 'months', mileageInterval: 30000 },
+            { type: 'Batteriecheck', icon: 'bi-battery', interval: 12, intervalType: 'months' },
+            { type: 'Bremsen prüfen', icon: 'bi-disc', interval: 12, intervalType: 'months' },
+            { type: 'Keilriemen', icon: 'bi-arrow-repeat', interval: 36, intervalType: 'months' }
+        ];
         
         // Initial data
         this.cars = [
@@ -96,17 +113,138 @@ class AutoWartungApp {
         });
         
         // Dark mode toggle
-        document.getElementById('darkModeToggle').addEventListener('click', () => {
-            this.toggleDarkMode();
-        });
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', () => {
+                this.toggleDarkMode();
+            });
+        }
         
-        // Modal events
-        document.getElementById('saveCarBtn').addEventListener('click', () => this.addCar());
-        document.getElementById('saveEditCarBtn').addEventListener('click', () => this.editCar());
-        document.getElementById('saveMaintenanceBtn').addEventListener('click', () => this.addMaintenance());
-        document.getElementById('confirmDeleteBtn').addEventListener('click', () => this.deleteCar());
+        // Modal events - bind safely
+        const saveCarBtn = document.getElementById('saveCarBtn');
+        if (saveCarBtn) {
+            saveCarBtn.addEventListener('click', () => this.addCar());
+        }
+        
+        const saveEditCarBtn = document.getElementById('saveEditCarBtn');
+        if (saveEditCarBtn) {
+            saveEditCarBtn.addEventListener('click', () => this.editCar());
+        }
+        
+        const saveMaintenanceBtn = document.getElementById('saveMaintenanceBtn');
+        if (saveMaintenanceBtn) {
+            saveMaintenanceBtn.addEventListener('click', () => this.addMaintenance());
+        }
+        
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', () => this.deleteCar());
+        }
+        
+        const confirmCompleteBtn = document.getElementById('confirmCompleteBtn');
+        if (confirmCompleteBtn) {
+            confirmCompleteBtn.addEventListener('click', () => this.confirmCompleteMaintenance());
+        }
         
         // Calendar navigation - will be bound dynamically
+    }
+    
+    bindMaintenanceTypeEvents() {
+        const typeInput = document.getElementById('maintenanceType');
+        const suggestionsDiv = document.getElementById('maintenanceSuggestions');
+        const presetsDiv = document.getElementById('maintenancePresets');
+        
+        // Check if elements exist before binding events
+        if (!typeInput || !suggestionsDiv || !presetsDiv) {
+            return;
+        }
+        
+        // Render preset buttons
+        this.renderMaintenancePresets();
+        
+        // Remove existing event listeners to prevent duplicates
+        typeInput.removeEventListener('input', this.handleTypeInput);
+        typeInput.removeEventListener('focus', this.handleTypeFocus);
+        
+        // Bind new event listeners
+        this.handleTypeInput = (e) => {
+            const value = e.target.value.toLowerCase();
+            if (value.length > 0) {
+                const filtered = this.maintenancePresets.filter(preset => 
+                    preset.type.toLowerCase().includes(value)
+                );
+                this.showSuggestions(filtered);
+            } else {
+                this.hideSuggestions();
+            }
+        };
+        
+        this.handleTypeFocus = () => {
+            if (typeInput.value.length > 0) {
+                const filtered = this.maintenancePresets.filter(preset => 
+                    preset.type.toLowerCase().includes(typeInput.value.toLowerCase())
+                );
+                this.showSuggestions(filtered);
+            }
+        };
+        
+        typeInput.addEventListener('input', this.handleTypeInput);
+        typeInput.addEventListener('focus', this.handleTypeFocus);
+        
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.position-relative')) {
+                this.hideSuggestions();
+            }
+        });
+    }
+    
+    renderMaintenancePresets() {
+        const presetsDiv = document.getElementById('maintenancePresets');
+        if (!presetsDiv) return;
+        
+        presetsDiv.innerHTML = this.maintenancePresets.slice(0, 6).map(preset => `
+            <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
+                    onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval}, '${preset.intervalType}', ${preset.mileageInterval || 'null'})">
+                <i class="${preset.icon} me-1"></i>
+                ${preset.type}
+            </button>
+        `).join('');
+    }
+    
+    selectMaintenancePreset(type, interval, intervalType, mileageInterval) {
+        document.getElementById('maintenanceType').value = type;
+        document.getElementById('interval').value = interval;
+        document.getElementById('intervalType').value = intervalType;
+        if (mileageInterval) {
+            document.getElementById('mileageInterval').value = mileageInterval;
+        }
+        this.hideSuggestions();
+    }
+    
+    showSuggestions(suggestions) {
+        const suggestionsDiv = document.getElementById('maintenanceSuggestions');
+        if (!suggestionsDiv) return;
+        
+        if (suggestions.length > 0) {
+            suggestionsDiv.innerHTML = suggestions.map(preset => `
+                <button type="button" class="suggestion-item" 
+                        onclick="app.selectMaintenancePreset('${preset.type}', ${preset.interval}, '${preset.intervalType}', ${preset.mileageInterval || 'null'})">
+                    <i class="${preset.icon} me-2"></i>
+                    ${preset.type}
+                </button>
+            `).join('');
+            suggestionsDiv.style.display = 'block';
+        } else {
+            this.hideSuggestions();
+        }
+    }
+    
+    hideSuggestions() {
+        const suggestionsDiv = document.getElementById('maintenanceSuggestions');
+        if (suggestionsDiv) {
+            suggestionsDiv.style.display = 'none';
+        }
     }
     
     setActiveTab(tab) {
@@ -151,6 +289,8 @@ class AutoWartungApp {
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
+                        ${this.cars.length > 1 ? this.renderCarSelector() : ''}
+                        
                         <div class="card mb-4">
                             <div class="card-header">
                                 <h4 class="card-title mb-0">
@@ -194,6 +334,34 @@ class AutoWartungApp {
         `;
         
         this.bindMaintenanceEvents();
+    }
+    
+    renderCarSelector() {
+        return `
+            <div class="car-selector mb-4">
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle car-selector-dropdown" type="button" 
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-car-front me-2"></i>
+                        ${this.getSelectedCar()?.model || 'Fahrzeug auswählen'}
+                    </button>
+                    <ul class="dropdown-menu">
+                        ${this.cars.map(car => `
+                            <li>
+                                <button class="car-option ${car.selected ? 'active' : ''}" 
+                                        onclick="app.selectCar(${car.id})">
+                                    <i class="bi ${car.selected ? 'bi-check-circle-fill' : 'bi-circle'} me-2"></i>
+                                    <div>
+                                        <div><strong>${car.model}</strong></div>
+                                        <small class="text-muted">${car.year} • ${car.mileage.toLocaleString()} km</small>
+                                    </div>
+                                </button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
     }
     
     renderCalendar() {
@@ -600,6 +768,11 @@ class AutoWartungApp {
             document.getElementById('selectedCarInfo').textContent = `Für: ${selectedCar.model}`;
             const modal = new bootstrap.Modal(document.getElementById('addMaintenanceModal'));
             modal.show();
+            
+            // Re-bind events after modal is shown
+            setTimeout(() => {
+                this.bindMaintenanceTypeEvents();
+            }, 100);
         } else {
             alert('Bitte wählen Sie zuerst ein Fahrzeug aus.');
         }
@@ -647,10 +820,100 @@ class AutoWartungApp {
     }
     
     toggleMaintenanceCompleted(maintenanceId) {
-        const maintenanceIndex = this.maintenances.findIndex(m => m.id === maintenanceId);
-        if (maintenanceIndex !== -1) {
-            this.maintenances[maintenanceIndex].completed = !this.maintenances[maintenanceIndex].completed;
-            this.renderContent();
+        const maintenance = this.maintenances.find(m => m.id === maintenanceId);
+        if (maintenance) {
+            if (maintenance.completed) {
+                // Einfach rückgängig machen
+                maintenance.completed = false;
+                this.renderContent();
+            } else {
+                // Wartung als erledigt markieren mit Abfrage
+                this.showCompleteMaintenanceModal(maintenanceId);
+            }
+        }
+    }
+    
+    showCompleteMaintenanceModal(maintenanceId) {
+        const maintenance = this.maintenances.find(m => m.id === maintenanceId);
+        if (maintenance) {
+            this.completingMaintenanceId = maintenanceId;
+            
+            // Calculate next maintenance date
+            const today = new Date();
+            const nextDate = new Date(today);
+            
+            if (maintenance.intervalType === 'months') {
+                nextDate.setMonth(nextDate.getMonth() + maintenance.interval);
+            } else {
+                nextDate.setFullYear(nextDate.getFullYear() + maintenance.interval);
+            }
+            
+            document.getElementById('completeMaintenanceText').textContent = 
+                `Wartung "${maintenance.type}" als erledigt markieren?`;
+            document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('completeMaintenanceModal'));
+            modal.show();
+            
+            // Bind checkbox event for this specific modal instance
+            const checkbox = document.getElementById('createNewMaintenance');
+            const dateField = document.getElementById('newMaintenanceDate');
+            
+            // Remove existing event listener if any
+            checkbox.removeEventListener('change', this.handleCheckboxChange);
+            
+            // Create new event handler
+            this.handleCheckboxChange = function() {
+                dateField.style.display = this.checked ? 'block' : 'none';
+            };
+            
+            // Bind the event
+            checkbox.addEventListener('change', this.handleCheckboxChange);
+            
+            // Initial state
+            dateField.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    }
+    
+    confirmCompleteMaintenance() {
+        if (this.completingMaintenanceId) {
+            const maintenance = this.maintenances.find(m => m.id === this.completingMaintenanceId);
+            const createNew = document.getElementById('createNewMaintenance').checked;
+            const nextDate = document.getElementById('nextMaintenanceDate').value;
+            
+            if (maintenance) {
+                // Mark current maintenance as completed
+                maintenance.completed = true;
+                
+                // Create new maintenance if requested
+                if (createNew && nextDate) {
+                    const newMaintenance = {
+                        id: Date.now(),
+                        carId: maintenance.carId,
+                        type: maintenance.type,
+                        lastDate: new Date().toISOString().split('T')[0],
+                        nextDate: nextDate,
+                        interval: maintenance.interval,
+                        intervalType: maintenance.intervalType,
+                        mileageInterval: maintenance.mileageInterval,
+                        completed: false
+                    };
+                    
+                    this.maintenances.push(newMaintenance);
+                }
+                
+                // Close modal and reset
+                const modal = bootstrap.Modal.getInstance(document.getElementById('completeMaintenanceModal'));
+                modal.hide();
+                this.completingMaintenanceId = null;
+                
+                // Reset form
+                document.getElementById('createNewMaintenance').checked = true;
+                document.getElementById('nextMaintenanceDate').value = '';
+                
+                this.renderContent();
+            }
         }
     }
     
