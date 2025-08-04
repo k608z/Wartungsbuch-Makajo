@@ -255,7 +255,7 @@ body.dark-mode .maintenance-card.status-ok {
 
 .maintenance-card.status-recommended {
     border-left-color: #ffc107;
-    background-color: #fff3cd;
+    background-color: #e9e9e9;
 }
 
 body.dark-mode .maintenance-card.status-recommended {
@@ -430,8 +430,8 @@ body.dark-mode .status-ok {
 }
 
 .status-recommended {
-    background-color: #ffc107;
-    color: #664d03;
+    background-color: #f5d36f;
+    color: #454545;
 }
 
 body.dark-mode .status-recommended {

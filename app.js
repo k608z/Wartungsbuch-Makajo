@@ -946,23 +946,29 @@ class AutoWartungApp {
             const today = new Date();
             const nextDate = new Date(today);
             
-            if (maintenance.intervalType === 'months') {
-                nextDate.setMonth(nextDate.getMonth() + maintenance.interval);
-            } else {
-                nextDate.setFullYear(nextDate.getFullYear() + maintenance.interval);
+            if (maintenance.interval && maintenance.intervalType) {
+                if (maintenance.intervalType === 'months') {
+                    nextDate.setMonth(nextDate.getMonth() + maintenance.interval);
+                } else {
+                    nextDate.setFullYear(nextDate.getFullYear() + maintenance.interval);
+                }
             }
             
             document.getElementById('completeMaintenanceText').textContent = 
                 `Wartung "${maintenance.type}" als erledigt markieren?`;
             
-            // Hide the next maintenance date field for recommended status
+            // Show the next maintenance date field for all maintenance types
             const newMaintenanceDateDiv = document.getElementById('newMaintenanceDate');
+            const createNewCheckbox = document.getElementById('createNewMaintenance');
+            
+            // For recommended maintenance, default to checked and show date field
             if (maintenance.status === 'recommended') {
-                newMaintenanceDateDiv.style.display = 'none';
-                document.getElementById('createNewMaintenance').checked = false;
-            } else {
+                createNewCheckbox.checked = true;
                 newMaintenanceDateDiv.style.display = 'block';
-                document.getElementById('createNewMaintenance').checked = true;
+                document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
+            } else {
+                createNewCheckbox.checked = true;
+                newMaintenanceDateDiv.style.display = 'block';
                 document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
             }
             
@@ -996,8 +1002,8 @@ class AutoWartungApp {
                 // Mark current maintenance as completed
                 maintenance.completed = true;
                 
-                // Create new maintenance if requested and if not a recommended maintenance
-                if (createNew && nextDate && maintenance.status !== 'recommended') {
+                // Create new maintenance if requested
+                if (createNew && nextDate) {
                     const newMaintenance = {
                         id: Date.now(),
                         carId: maintenance.carId,
@@ -1008,7 +1014,7 @@ class AutoWartungApp {
                         intervalType: maintenance.intervalType,
                         mileageInterval: maintenance.mileageInterval,
                         completed: false,
-                        status: null
+                        status: null // Regular maintenance, not recommended
                     };
                     
                     this.maintenances.push(newMaintenance);
