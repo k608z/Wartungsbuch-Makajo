@@ -303,69 +303,93 @@ class AutoWartungApp {
         }
     }
     
-    renderOverview() {
-        const selectedCar = this.getSelectedCar();
-        let carMaintenances = [];
+    
+renderOverview() {
+    const selectedCar = this.getSelectedCar();
+    let carMaintenances = [];
 
-        if (selectedCar) {
-            carMaintenances = this.getCarMaintenances();
-            
-            // Filter out completed recommended maintenances
-            carMaintenances = carMaintenances.filter(m => m.status !== 'recommended' || !m.completed);
-        }
-        
-        const content = document.getElementById('main-content');
-        content.innerHTML = `
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-12">
-                        ${this.cars.length > 1 ? this.renderCarSelector() : ''}
-                        
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h4 class="card-title mb-0">
-                                    <i class="bi bi-car-front-fill me-2"></i>
-                                    Aktuelles Fahrzeug
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                ${selectedCar ? `
-                                    <div class="car-info-box">
-                                        <h4>${selectedCar.model}</h4>
-                                        <p><strong>Baujahr:</strong> ${selectedCar.year}</p>
-                                        <p><strong>Laufleistung:</strong> ${selectedCar.mileage.toLocaleString()} km</p>
-                                    </div>
-                                ` : `
-                                    <div class="alert alert-warning">
-                                        <i class="bi bi-exclamation-triangle me-2"></i>
-                                        Kein Fahrzeug ausgewählt
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                        
-                        <div class="card">
-                            <div class="card-header">
-                                <h4 class="card-title mb-0">
-                                    <i class="bi bi-tools me-2"></i>
-                                    Wartungsübersicht
-                                </h4>
-                            </div>
-                            <div class="card-body">
-                                ${carMaintenances.length > 0 ? 
-                                    carMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
-                                    '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine Wartungen für dieses Fahrzeug</div>'
-                                }
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        this.bindMaintenanceEvents();
+    if (selectedCar) {
+        carMaintenances = this.getCarMaintenances();
     }
     
+    // Aufteilung in anstehende und erledigte Wartungen
+    const pendingMaintenances = carMaintenances.filter(m => !m.completed);
+    const completedMaintenances = carMaintenances.filter(m => m.completed);
+
+    const content = document.getElementById('main-content');
+    content.innerHTML = `
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    ${this.cars.length > 1 ? this.renderCarSelector() : ''}
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">
+                                <i class="bi bi-car-front-fill me-2"></i>
+                                Aktuelles Fahrzeug
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            ${selectedCar ? `
+                                <div class="car-info-box">
+                                    <h4>${selectedCar.model}</h4>
+                                    <p><strong>Baujahr:</strong> ${selectedCar.year}</p>
+                                    <p><strong>Laufleistung:</strong> ${selectedCar.mileage.toLocaleString()} km</p>
+                                </div>
+                            ` : `
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    Kein Fahrzeug ausgewählt
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">
+                                <i class="bi bi-tools me-2"></i>
+                                Anstehende Wartungen
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            ${pendingMaintenances.length > 0 ? 
+                                pendingMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
+                                '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine anstehenden Wartungen</div>'
+                            }
+                        </div>
+                    </div>
+
+                    <div class="accordion" id="completedMaintenanceAccordion">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            Erledigte Wartungen (${completedMaintenances.length})
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#completedMaintenanceAccordion">
+                          <div class="accordion-body">
+                            ${completedMaintenances.length > 0 ? 
+                                completedMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
+                                '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine erledigten Wartungen</div>'
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    `;
+    
+    this.bindMaintenanceEvents();
+}
+
+
+
     renderCarSelector() {
         return `
             <div class="car-selector mb-4">
