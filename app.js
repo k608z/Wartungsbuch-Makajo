@@ -4,6 +4,7 @@ class AutoWartungApp {
         this.activeTab = 'overview';
         this.currentDate = new Date();
         this.editingCarId = null;
+        this.editingMaintenanceId = null;
         this.carToDelete = null;
         this.completingMaintenanceId = null;
         this.isDarkMode = false;
@@ -16,6 +17,7 @@ class AutoWartungApp {
         this.placesService = null;
         this.searchRadius = 5000; // 5km default
         this.currentWorkshops = [];
+        this.searchCircle = null;
         
         // Wartungstyp-Vorschläge
         this.maintenancePresets = [
@@ -31,11 +33,25 @@ class AutoWartungApp {
             { type: 'Batteriecheck', icon: 'bi-battery', interval: 12, intervalType: 'months' },
             { type: 'Bremsen prüfen', icon: 'bi-disc', interval: 12, intervalType: 'months' },
             { type: 'Keilriemen', icon: 'bi-arrow-repeat', interval: 36, intervalType: 'months' },
-            // NEUE EINTRÄGE FÜR VERSCHLEISSTEILE
             { type: 'Bremsbeläge prüfen', icon: 'bi-shield-fill-exclamation', mileageInterval: 25000 },
             { type: 'Bremsscheiben prüfen', icon: 'bi-disc-fill', mileageInterval: 50000 },
             { type: 'Traggelenke prüfen', icon: 'bi-gear-wide-connected', mileageInterval: 80000 },
-            { type: 'Reifen prüfen', icon: 'bi-tire-fill', mileageInterval: 40000 }
+            { type: 'Reifen prüfen', icon: 'bi-tire-fill', mileageInterval: 40000 },
+            { type: 'Bremsflüssigkeit wechseln', icon: 'bi-droplet-half', interval: 24, intervalType: 'months' },
+            { type: 'Getriebeöl wechseln', icon: 'bi-gear', mileageInterval: 100000 },
+            { type: 'Innenraumfilter wechseln', icon: 'bi-filter', interval: 12, intervalType: 'months' },
+            { type: 'Zahnriemen wechseln', icon: 'bi-hourglass-split', mileageInterval: 120000 },
+            { type: 'Scheinwerfer-Einstellung', icon: 'bi-lightbulb', interval: 12, intervalType: 'months' },
+            { type: 'Fehlerspeicher auslesen', icon: 'bi-file-earmark-code', interval: 12, intervalType: 'months' },
+            { type: 'Karosseriedurchsicht', icon: 'bi-truck', interval: 12, intervalType: 'months' },
+            { type: 'Luftfilter und Innenraumfilter wechseln', icon: 'bi-filter-circle', interval: 12, intervalType: 'months' },
+            { type: 'Flüssigkeitsstände prüfen', icon: 'bi-oil-can', interval: 3, intervalType: 'months' },
+            { type: 'Beleuchtung prüfen', icon: 'bi-lightbulb', interval: 6, intervalType: 'months' },
+            { type: 'Keilrippenriemen wechseln', icon: 'bi-arrow-repeat', mileageInterval: 100000 },
+            { type: 'Stoßdämpfer prüfen', icon: 'bi-arrow-down-up', mileageInterval: 80000 },
+            { type: 'Kraftstofffilter wechseln', icon: 'bi-fuel-pump', mileageInterval: 60000 },
+            { type: 'Achsvermessung', icon: 'bi-truck', mileageInterval: 30000 },
+            { type: 'Radlager prüfen', icon: 'bi-nut', mileageInterval: 150000 }
         ];
         
         // Initial data
@@ -149,6 +165,11 @@ class AutoWartungApp {
         if (saveMaintenanceBtn) {
             saveMaintenanceBtn.addEventListener('click', () => this.addMaintenance());
         }
+
+        const saveEditMaintenanceBtn = document.getElementById('saveEditMaintenanceBtn');
+        if (saveEditMaintenanceBtn) {
+            saveEditMaintenanceBtn.addEventListener('click', () => this.editMaintenance());
+        }
         
         const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
         if (confirmDeleteBtn) {
@@ -215,7 +236,6 @@ class AutoWartungApp {
         const presetsDiv = document.getElementById('maintenancePresets');
         if (!presetsDiv) return;
         
-        // Filter out presets without mileageInterval for the main suggestions
         const mileagePresets = this.maintenancePresets.filter(p => p.mileageInterval);
 
         presetsDiv.innerHTML = mileagePresets.slice(0, 6).map(preset => `
@@ -303,93 +323,89 @@ class AutoWartungApp {
         }
     }
     
-    
-renderOverview() {
-    const selectedCar = this.getSelectedCar();
-    let carMaintenances = [];
+    renderOverview() {
+        const selectedCar = this.getSelectedCar();
+        let carMaintenances = [];
 
-    if (selectedCar) {
-        carMaintenances = this.getCarMaintenances();
-    }
-    
-    // Aufteilung in anstehende und erledigte Wartungen
-    const pendingMaintenances = carMaintenances.filter(m => !m.completed);
-    const completedMaintenances = carMaintenances.filter(m => m.completed);
+        if (selectedCar) {
+            carMaintenances = this.getCarMaintenances();
+        }
+        
+        const pendingMaintenances = carMaintenances.filter(m => !m.completed);
+        const completedMaintenances = carMaintenances.filter(m => m.completed);
 
-    const content = document.getElementById('main-content');
-    content.innerHTML = `
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-12">
-                    ${this.cars.length > 1 ? this.renderCarSelector() : ''}
-                    
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h4 class="card-title mb-0">
-                                <i class="bi bi-car-front-fill me-2"></i>
-                                Aktuelles Fahrzeug
-                            </h4>
+        const content = document.getElementById('main-content');
+        content.innerHTML = `
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        ${this.cars.length > 1 ? this.renderCarSelector() : ''}
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <i class="bi bi-car-front-fill me-2"></i>
+                                    Aktuelles Fahrzeug
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                ${selectedCar ? `
+                                    <div class="car-info-box">
+                                        <h4>${selectedCar.model}</h4>
+                                        <p><strong>Baujahr:</strong> ${selectedCar.year}</p>
+                                        <p><strong>Laufleistung:</strong> ${selectedCar.mileage.toLocaleString()} km</p>
+                                    </div>
+                                ` : `
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        Kein Fahrzeug ausgewählt
+                                    </div>
+                                `}
+                            </div>
                         </div>
-                        <div class="card-body">
-                            ${selectedCar ? `
-                                <div class="car-info-box">
-                                    <h4>${selectedCar.model}</h4>
-                                    <p><strong>Baujahr:</strong> ${selectedCar.year}</p>
-                                    <p><strong>Laufleistung:</strong> ${selectedCar.mileage.toLocaleString()} km</p>
-                                </div>
-                            ` : `
-                                <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    Kein Fahrzeug ausgewählt
-                                </div>
-                            `}
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <i class="bi bi-tools me-2"></i>
+                                    Anstehende Wartungen
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                ${pendingMaintenances.length > 0 ? 
+                                    pendingMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
+                                    '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine anstehenden Wartungen</div>'
+                                }
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h4 class="card-title mb-0">
-                                <i class="bi bi-tools me-2"></i>
-                                Anstehende Wartungen
-                            </h4>
-                        </div>
-                        <div class="card-body">
-                            ${pendingMaintenances.length > 0 ? 
-                                pendingMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
-                                '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine anstehenden Wartungen</div>'
-                            }
-                        </div>
-                    </div>
 
-                    <div class="accordion" id="completedMaintenanceAccordion">
-                      <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingOne">
-                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            Erledigte Wartungen (${completedMaintenances.length})
-                          </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#completedMaintenanceAccordion">
-                          <div class="accordion-body">
-                            ${completedMaintenances.length > 0 ? 
-                                completedMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
-                                '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine erledigten Wartungen</div>'
-                            }
+                        <div class="accordion" id="completedMaintenanceAccordion">
+                          <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingOne">
+                              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                Erledigte Wartungen (${completedMaintenances.length})
+                              </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#completedMaintenanceAccordion">
+                              <div class="accordion-body">
+                                ${completedMaintenances.length > 0 ? 
+                                    completedMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance)).join('') :
+                                    '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine erledigten Wartungen</div>'
+                                }
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
 
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
+        
+        this.bindMaintenanceEvents();
+    }
     
-    this.bindMaintenanceEvents();
-}
-
-
-
     renderCarSelector() {
         return `
             <div class="car-selector mb-4">
@@ -601,9 +617,12 @@ renderOverview() {
     }
     
     renderMaintenance() {
-        const carMaintenances = this.getCarMaintenances().filter(m => m.status !== 'recommended');
+        const carMaintenances = this.getCarMaintenances();
         const selectedCar = this.getSelectedCar();
         
+        // Filtern Sie die Wartungen, sodass nur die anstehenden angezeigt werden
+        const pendingMaintenances = carMaintenances.filter(m => !m.completed);
+
         const content = document.getElementById('main-content');
         content.innerHTML = `
             <div class="container-fluid">
@@ -619,9 +638,9 @@ renderOverview() {
                         </button>
                     </div>
                     <div class="card-body">
-                        ${carMaintenances.length > 0 ? 
-                            carMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance, true)).join('') :
-                            '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine Wartungen für dieses Fahrzeug</div>'
+                        ${pendingMaintenances.length > 0 ? 
+                            pendingMaintenances.map(maintenance => this.renderMaintenanceItem(maintenance, true, true)).join('') :
+                            '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Keine anstehenden Wartungen für dieses Fahrzeug</div>'
                         }
                     </div>
                 </div>
@@ -660,6 +679,23 @@ renderOverview() {
                             </div>
                         </div>
                         
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-6">
+                                <select class="form-select" id="serviceType" onchange="app.searchWorkshops()">
+                                    <option value="autowerkstatt">Allgemeine Werkstatt</option>
+                                    <option value="reifen">Reifenservice</option>
+                                    <option value="karosserie">Karosseriewerkstatt</option>
+                                    <option value="klimaservice">Klimaservice</option>
+                                    <option value="getriebereparatur">Getriebereparatur</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-outline-secondary w-100" id="sortWorkshopsBtn" onclick="app.sortWorkshops()">
+                                    <i class="bi bi-sort-down me-2"></i>Nach Entfernung sortieren
+                                </button>
+                            </div>
+                        </div>
+                        
                         <div class="maps-container">
                             <div id="map" class="maps-loading">
                                 <div class="loading-spinner"></div>
@@ -675,37 +711,46 @@ renderOverview() {
         `;
     }
     
-    renderMaintenanceItem(maintenance, detailed = false) {
-        const status = this.getMaintenanceStatus(maintenance);
-        const statusText = this.getStatusText(status);
-        const statusIcon = this.getStatusIcon(status);
-        
-        return `
-            <div class="card maintenance-card status-${status} mb-3">
-                <div class="maintenance-item">
-                    <div class="maintenance-info">
-                        <h5>
-                            <i class="bi ${statusIcon} me-2"></i>
-                            ${maintenance.type}
-                            ${maintenance.status === 'recommended' ? '<span class="badge bg-warning text-dark ms-2">Empfohlen</span>' : ''}
-                        </h5>
-                        <small>Letzter Service: ${maintenance.lastDate ? new Date(maintenance.lastDate).toLocaleDateString('de-DE') : 'Unbekannt'}</small>
-                        <small>Nächster Service: ${maintenance.nextDate ? new Date(maintenance.nextDate).toLocaleDateString('de-DE') : 'N/A'}</small>
-                        ${detailed && maintenance.interval ? `
-                            <small>Intervall: ${maintenance.interval} ${maintenance.intervalType === 'months' ? 'Monate' : 'Jahre'}</small>
-                        ` : ''}
-                        ${detailed && maintenance.mileageInterval ? `<small>Oder alle ${maintenance.mileageInterval.toLocaleString()} km</small>` : ''}
-                    </div>
-                    <div class="maintenance-actions">
-                        <span class="badge status-badge status-${status}">${statusText}</span>
+   renderMaintenanceItem(maintenance, detailed = false, showManagementButtons = false) {
+    const status = this.getMaintenanceStatus(maintenance);
+    const statusText = this.getStatusText(status);
+    const statusIcon = this.getStatusIcon(status);
+    
+    return `
+        <div class="card maintenance-card status-${status} mb-3">
+            <div class="maintenance-item">
+                <div class="maintenance-info">
+                    <h5>
+                        <i class="bi ${statusIcon} me-2"></i>
+                        ${maintenance.type}
+                        ${maintenance.status === 'recommended' ? '<span class="badge bg-warning text-dark ms-2">Empfohlen</span>' : ''}
+                    </h5>
+                    <small>Letzter Service: ${maintenance.lastDate ? new Date(maintenance.lastDate).toLocaleDateString('de-DE') : 'Unbekannt'}</small>
+                    <small>Nächster Service: ${maintenance.nextDate ? new Date(maintenance.nextDate).toLocaleDateString('de-DE') : 'N/A'}</small>
+                    ${detailed && maintenance.interval ? `
+                        <small>Intervall: ${maintenance.interval} ${maintenance.intervalType === 'months' ? 'Monate' : 'Jahre'}</small>
+                    ` : ''}
+                    ${detailed && maintenance.mileageInterval ? `<small>Oder alle ${maintenance.mileageInterval.toLocaleString()} km</small>` : ''}
+                </div>
+                <div class="maintenance-actions">
+                    <span class="badge status-badge status-${status}">${statusText}</span>
+                    ${!showManagementButtons ? `
                         <button class="btn btn-sm btn-primary" onclick="app.toggleMaintenanceCompleted(${maintenance.id})">
                             ${maintenance.completed ? 'Rückgängig' : 'Erledigt'}
                         </button>
-                    </div>
+                    ` : `
+                        <button class="btn btn-sm btn-icon btn-edit" data-maintenance-id="${maintenance.id}" title="Bearbeiten">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-delete" data-maintenance-id="${maintenance.id}" title="Löschen">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `}
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
     
     // Utility methods
     getSelectedCar() {
@@ -753,8 +798,26 @@ renderOverview() {
     
     // Event handlers
     bindMaintenanceEvents() {
-        // Events are bound via onclick attributes in the HTML
-    }
+    // Events for deleting a maintenance item
+    const deleteButtons = document.querySelectorAll('.maintenance-actions .btn-delete');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const maintenanceId = parseInt(button.getAttribute('data-maintenance-id'));
+            this.startDeleteMaintenance(maintenanceId);
+        });
+    });
+
+    // Events for editing a maintenance item
+    const editButtons = document.querySelectorAll('.maintenance-actions .btn-edit');
+    editButtons.forEach(button => {
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const maintenanceId = parseInt(button.getAttribute('data-maintenance-id'));
+            this.startEditMaintenance(maintenanceId);
+        });
+    });
+}
     
     // Car management
     addCar() {
@@ -773,7 +836,6 @@ renderOverview() {
             
             this.cars.push(car);
             
-            // NEUE LOGIK: Wartungsempfehlungen basierend auf der Laufleistung hinzufügen
             const today = new Date();
             this.maintenancePresets.forEach(preset => {
                 if (preset.mileageInterval && mileage >= preset.mileageInterval) {
@@ -782,7 +844,7 @@ renderOverview() {
                     );
                     if (!existingMaintenance) {
                         const newMaintenance = {
-                            id: Date.now() + Math.random(), // Unique ID
+                            id: Date.now() + Math.random(),
                             carId: car.id,
                             type: preset.type,
                             lastDate: null,
@@ -798,7 +860,6 @@ renderOverview() {
                 }
             });
             
-            // Close modal and reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addCarModal'));
             modal.hide();
             document.getElementById('addCarForm').reset();
@@ -835,7 +896,6 @@ renderOverview() {
                     mileage: mileage
                 };
                 
-                // Close modal and reset
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editCarModal'));
                 modal.hide();
                 this.editingCarId = null;
@@ -859,11 +919,9 @@ renderOverview() {
     
     deleteCar() {
         if (this.carToDelete) {
-            // Remove car and its maintenances
             this.maintenances = this.maintenances.filter(m => m.carId !== this.carToDelete);
             const remainingCars = this.cars.filter(car => car.id !== this.carToDelete);
             
-            // If deleted car was selected, select the first remaining car
             const deletedCar = this.cars.find(car => car.id === this.carToDelete);
             if (deletedCar && deletedCar.selected && remainingCars.length > 0) {
                 remainingCars[0].selected = true;
@@ -871,7 +929,6 @@ renderOverview() {
             
             this.cars = remainingCars;
             
-            // Close modal and reset
             const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCarModal'));
             modal.hide();
             this.carToDelete = null;
@@ -888,7 +945,6 @@ renderOverview() {
         this.renderContent();
     }
     
-    // Maintenance management
     showAddMaintenanceModal() {
         const selectedCar = this.getSelectedCar();
         if (selectedCar) {
@@ -896,7 +952,6 @@ renderOverview() {
             const modal = new bootstrap.Modal(document.getElementById('addMaintenanceModal'));
             modal.show();
             
-            // Re-bind events after modal is shown
             setTimeout(() => {
                 this.bindMaintenanceTypeEvents();
             }, 100);
@@ -938,7 +993,6 @@ renderOverview() {
             
             this.maintenances.push(maintenance);
             
-            // Close modal and reset form
             const modal = bootstrap.Modal.getInstance(document.getElementById('addMaintenanceModal'));
             modal.hide();
             document.getElementById('addMaintenanceForm').reset();
@@ -946,16 +1000,74 @@ renderOverview() {
             this.renderContent();
         }
     }
+
+   startEditMaintenance(maintenanceId) {
+        const maintenance = this.maintenances.find(m => m.id === maintenanceId);
+        if (maintenance) {
+            this.editingMaintenanceId = maintenanceId;
+
+            const selectedCar = this.cars.find(c => c.id === maintenance.carId);
+            document.getElementById('editMaintenanceCarInfo').textContent = `Für: ${selectedCar.model}`;
+            document.getElementById('editMaintenanceType').value = maintenance.type;
+            document.getElementById('editLastDate').value = maintenance.lastDate;
+            document.getElementById('editNextDate').value = maintenance.nextDate; // NEU
+            document.getElementById('editInterval').value = maintenance.interval;
+            document.getElementById('editIntervalType').value = maintenance.intervalType;
+            document.getElementById('editMileageInterval').value = maintenance.mileageInterval || '';
+
+            const modal = new bootstrap.Modal(document.getElementById('editMaintenanceModal'));
+            modal.show();
+        }
+    }
+
+    editMaintenance() {
+        const maintenanceId = this.editingMaintenanceId;
+        const maintenanceIndex = this.maintenances.findIndex(m => m.id === maintenanceId);
+
+        if (maintenanceIndex !== -1) {
+            const type = document.getElementById('editMaintenanceType').value.trim();
+            const lastDate = document.getElementById('editLastDate').value;
+            const nextDate = document.getElementById('editNextDate').value; // NEU: Liest das Datum direkt aus
+            const interval = parseInt(document.getElementById('editInterval').value);
+            const intervalType = document.getElementById('editIntervalType').value;
+            const mileageInterval = document.getElementById('editMileageInterval').value;
+
+            if (type && lastDate && interval && nextDate) { // NEU: Überprüfung des nächsten Datums hinzugefügt
+                
+                this.maintenances[maintenanceIndex] = {
+                    ...this.maintenances[maintenanceIndex],
+                    type: type,
+                    lastDate: lastDate,
+                    nextDate: nextDate, // NEU: Speichert das vom Benutzer eingegebene Datum
+                    interval: interval,
+                    intervalType: intervalType,
+                    mileageInterval: mileageInterval ? parseInt(mileageInterval) : null
+                };
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editMaintenanceModal'));
+                modal.hide();
+                this.editingMaintenanceId = null;
+                this.renderContent();
+            }
+        }
+    }
+    startDeleteMaintenance(maintenanceId) {
+        const maintenance = this.maintenances.find(m => m.id === maintenanceId);
+        if (maintenance) {
+            if (confirm(`Sind Sie sicher, dass Sie die Wartung "${maintenance.type}" löschen möchten?`)) {
+                this.maintenances = this.maintenances.filter(m => m.id !== maintenanceId);
+                this.renderContent();
+            }
+        }
+    }
     
     toggleMaintenanceCompleted(maintenanceId) {
         const maintenance = this.maintenances.find(m => m.id === maintenanceId);
         if (maintenance) {
             if (maintenance.completed) {
-                // Einfach rückgängig machen
                 maintenance.completed = false;
                 this.renderContent();
             } else {
-                // Wartung als erledigt markieren mit Abfrage
                 this.showCompleteMaintenanceModal(maintenanceId);
             }
         }
@@ -966,52 +1078,39 @@ renderOverview() {
         if (maintenance) {
             this.completingMaintenanceId = maintenanceId;
             
-            // Calculate next maintenance date
             const today = new Date();
             const nextDate = new Date(today);
             
-            if (maintenance.interval && maintenance.intervalType) {
-                if (maintenance.intervalType === 'months') {
-                    nextDate.setMonth(nextDate.getMonth() + maintenance.interval);
-                } else {
-                    nextDate.setFullYear(nextDate.getFullYear() + maintenance.interval);
-                }
+            if (maintenance.intervalType === 'months') {
+                nextDate.setMonth(nextDate.getMonth() + maintenance.interval);
+            } else {
+                nextDate.setFullYear(nextDate.getFullYear() + maintenance.interval);
             }
             
             document.getElementById('completeMaintenanceText').textContent = 
                 `Wartung "${maintenance.type}" als erledigt markieren?`;
             
-            // Show the next maintenance date field for all maintenance types
             const newMaintenanceDateDiv = document.getElementById('newMaintenanceDate');
-            const createNewCheckbox = document.getElementById('createNewMaintenance');
-            
-            // For recommended maintenance, default to checked and show date field
-            if (maintenance.status === 'recommended') {
-                createNewCheckbox.checked = true;
-                newMaintenanceDateDiv.style.display = 'block';
-                document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
+            if (maintenance.status === 'recommended' || !maintenance.interval) {
+                newMaintenanceDateDiv.style.display = 'none';
+                document.getElementById('createNewMaintenance').checked = false;
             } else {
-                createNewCheckbox.checked = true;
                 newMaintenanceDateDiv.style.display = 'block';
+                document.getElementById('createNewMaintenance').checked = true;
                 document.getElementById('nextMaintenanceDate').value = nextDate.toISOString().split('T')[0];
             }
             
-            // Show modal
             const modal = new bootstrap.Modal(document.getElementById('completeMaintenanceModal'));
             modal.show();
             
-            // Bind checkbox event for this specific modal instance
             const checkbox = document.getElementById('createNewMaintenance');
             
-            // Remove existing event listener if any
             checkbox.removeEventListener('change', this.handleCheckboxChange);
             
-            // Create new event handler
             this.handleCheckboxChange = function() {
                 newMaintenanceDateDiv.style.display = this.checked ? 'block' : 'none';
             };
             
-            // Bind the event
             checkbox.addEventListener('change', this.handleCheckboxChange);
         }
     }
@@ -1023,33 +1122,30 @@ renderOverview() {
             const nextDate = document.getElementById('nextMaintenanceDate').value;
             
             if (maintenance) {
-                // Mark current maintenance as completed
                 maintenance.completed = true;
+                maintenance.lastDate = new Date().toISOString().split('T')[0];
                 
-                // Create new maintenance if requested
-                if (createNew && nextDate) {
+                if (createNew && nextDate && maintenance.status !== 'recommended') {
                     const newMaintenance = {
-                        id: Date.now(),
+                        id: Date.now() + Math.random(),
                         carId: maintenance.carId,
                         type: maintenance.type,
-                        lastDate: new Date().toISOString().split('T')[0],
+                        lastDate: maintenance.lastDate,
                         nextDate: nextDate,
                         interval: maintenance.interval,
                         intervalType: maintenance.intervalType,
                         mileageInterval: maintenance.mileageInterval,
                         completed: false,
-                        status: null // Regular maintenance, not recommended
+                        status: null
                     };
                     
                     this.maintenances.push(newMaintenance);
                 }
                 
-                // Close modal and reset
                 const modal = bootstrap.Modal.getInstance(document.getElementById('completeMaintenanceModal'));
                 modal.hide();
                 this.completingMaintenanceId = null;
                 
-                // Reset form
                 document.getElementById('createNewMaintenance').checked = true;
                 document.getElementById('nextMaintenanceDate').value = '';
                 
@@ -1148,16 +1244,20 @@ renderOverview() {
         
         // Search for workshops
         this.searchWorkshops();
+        
+        // Zeichne den Suchradius-Kreis
+        this.drawSearchCircle();
     }
     
     searchWorkshops() {
         if (!this.placesService || !this.userLocation) return;
         
+        const serviceType = document.getElementById('serviceType').value;
         const request = {
             location: this.userLocation,
             radius: this.searchRadius,
             type: 'car_repair',
-            keyword: 'autowerkstatt'
+            keyword: serviceType
         };
         
         this.placesService.nearbySearch(request, (results, status) => {
@@ -1168,6 +1268,40 @@ renderOverview() {
                 this.showMapsError('Fehler beim Suchen von Werkstätten.');
             }
         });
+    }
+
+    sortWorkshops() {
+        if (this.currentWorkshops.length === 0) return;
+        
+        const sorted = [...this.currentWorkshops].map(workshop => {
+            const distance = this.calculateDistance(
+                this.userLocation.lat, this.userLocation.lng,
+                workshop.geometry.location.lat(), workshop.geometry.location.lng()
+            );
+            return { ...workshop, distance };
+        }).sort((a, b) => a.distance - b.distance);
+    
+        this.renderWorkshopsList(sorted);
+    }
+    
+    drawSearchCircle() {
+        if (this.searchCircle) {
+            this.searchCircle.setMap(null);
+        }
+        
+        if (this.userLocation) {
+            this.searchCircle = new google.maps.Circle({
+                strokeColor: '#0d6efd',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#0d6efd',
+                fillOpacity: 0.15,
+                map: this.map,
+                center: this.userLocation,
+                radius: this.searchRadius
+            });
+            this.map.fitBounds(this.searchCircle.getBounds());
+        }
     }
     
     displayWorkshops(workshops) {
@@ -1220,7 +1354,7 @@ renderOverview() {
         }).sort((a, b) => a.distance - b.distance);
         
         workshopsList.innerHTML = sortedWorkshops.map(workshop => `
-            <div class="workshop-item" onclick="app.showWorkshopDetails(${JSON.stringify(workshop).replace(/"/g, '"')})">
+            <div class="workshop-item" onclick="app.showWorkshopDetails(${JSON.stringify(workshop).replace(/"/g, '\'')})">
                 <div class="workshop-info">
                     <h6>${workshop.name}</h6>
                     <p><i class="bi bi-geo-alt me-1"></i>${workshop.vicinity}</p>
@@ -1340,6 +1474,7 @@ renderOverview() {
         this.searchRadius = parseInt(radius);
         if (this.placesService && this.userLocation) {
             this.searchWorkshops();
+            this.drawSearchCircle();
         }
     }
     
