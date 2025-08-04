@@ -76,7 +76,9 @@ body.dark-mode .alert-warning {
     display: flex;
     gap: 0;
     box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    position: relative;
+    position: fixed;
+    z-index: 1000;
+    width: 100vw;
 }
 
 body.dark-mode .tab-nav {
@@ -1053,12 +1055,12 @@ body.dark-mode .workshop-modal-info-item {
 .titelbild-container {
     position: relative;
     width: 100%;
-    height: 350px;
+    height: 375px;
     overflow: hidden;
 }
 .titelbild {
     width: 100%;
-    height: 120%;
+    height: 150%;
     object-fit: cover;
     object-position: center;
     display: block;
