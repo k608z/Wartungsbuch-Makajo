@@ -153,6 +153,56 @@
         </div>
     </div>
 
+  
+<div class="modal fade" id="editMaintenanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Wartung bearbeiten</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editMaintenanceCarInfo" class="alert alert-info mb-3"></div>
+                <form id="editMaintenanceForm">
+                    <div class="mb-3">
+                        <label for="editMaintenanceType" class="form-label">Wartungstyp</label>
+                        <input type="text" class="form-control" id="editMaintenanceType" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLastDate" class="form-label">Letztes Wartungsdatum</label>
+                        <input type="date" class="form-control" id="editLastDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editNextDate" class="form-label">Nächstes Wartungsdatum</label>
+                        <input type="date" class="form-control" id="editNextDate">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label for="editInterval" class="form-label">Intervall</label>
+                            <input type="number" class="form-control" id="editInterval">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="editIntervalType" class="form-label">Einheit</label>
+                            <select class="form-select" id="editIntervalType">
+                                <option value="months">Monate</option>
+                                <option value="years">Jahre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3 mt-3">
+                        <label for="editMileageInterval" class="form-label">Kilometerintervall (optional)</label>
+                        <input type="number" class="form-control" id="editMileageInterval">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-primary" id="saveEditMaintenanceBtn">Speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
     <div class="modal fade" id="deleteCarModal" tabindex="-1">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
