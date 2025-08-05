@@ -1078,6 +1078,36 @@ body.dark-mode .workshop-modal-info-item {
     text-align: center;
 }
 
+/* Dark Mode für Akkordion (Erledigte Wartungen) */
+body.dark-mode .accordion-item {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+
+body.dark-mode .accordion-header {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .accordion-button {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+}
+
+body.dark-mode .accordion-button:not(.collapsed) {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    box-shadow: inset 0 -1px 0 #333;
+}
+
+body.dark-mode .accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+body.dark-mode .accordion-button::after {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
 /* Animation für smooth transitions */
 .fade-in {
     animation: fadeIn 0.3s ease-in;
