@@ -111,40 +111,44 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="selectedCarInfo" class="alert alert-info mb-3"></div>
-                    <form id="addMaintenanceForm">
-                        <div class="mb-3 position-relative">
-                            <label for="maintenanceType" class="form-label">Wartungstyp</label>
-                            <input type="text" class="form-control" id="maintenanceType" placeholder="z.B. Ölwechsel, Inspektion" required>
-                            <div id="maintenanceSuggestions" class="maintenance-suggestions" style="display: none;"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Häufige Wartungstypen</label>
-                            <div id="maintenancePresets" class="d-flex flex-wrap gap-2"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="lastDate" class="form-label">Letztes Wartungsdatum</label>
-                            <input type="date" class="form-control" id="lastDate" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-8">
-                                <label for="interval" class="form-label">Intervall</label>
-                                <input type="number" class="form-control" id="interval" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="intervalType" class="form-label">Einheit</label>
-                                <select class="form-select" id="intervalType">
-                                    <option value="months">Monate</option>
-                                    <option value="years">Jahre</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3 mt-3">
-                            <label for="mileageInterval" class="form-label">Kilometerintervall (optional)</label>
-                            <input type="number" class="form-control" id="mileageInterval" placeholder="z.B. 10000">
-                        </div>
-                    </form>
-                </div>
+    <div id="selectedCarInfo" class="alert alert-info mb-3"></div>
+    <form id="addMaintenanceForm">
+        <div class="mb-3 position-relative">
+            <label for="maintenanceType" class="form-label">Wartungstyp</label>
+            <input type="text" class="form-control" id="maintenanceType" placeholder="z.B. Ölwechsel, Inspektion..." required>
+            <div id="maintenanceSuggestions" class="maintenance-suggestions" style="display: none;"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Häufige Wartungstypen</label>
+            <div id="maintenancePresets" class="d-flex flex-wrap gap-2"></div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="lastDate" class="form-label">Letztes Wartungsdatum</label>
+            <input type="date" class="form-control" id="lastDate" required>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-8">
+                <label for="interval" class="form-label">Intervall</label>
+                <input type="number" class="form-control" id="interval" required>
+            </div>
+            <div class="col-md-4">
+                <label for="intervalType" class="form-label">Einheit</label>
+                <select class="form-select" id="intervalType">
+                    <option value="months">Monate</option>
+                    <option value="years">Jahre</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <label for="mileageInterval" class="form-label">Kilometerintervall (optional)</label>
+            <input type="number" class="form-control" id="mileageInterval" placeholder="z.B. 10000">
+        </div>
+    </form>
+</div>
+
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                     <button type="button" class="btn btn-primary" id="saveMaintenanceBtn">Hinzufügen</button>
