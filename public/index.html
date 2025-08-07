@@ -276,6 +276,30 @@
         </div>
     </div>
 
+
+<div class="modal fade" id="workshopModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="workshopModalTitle">Werkstatt-Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="workshopModalBody">
+                    <div class="text-center"><div class="spinner-border" role="status"></div></div>
+                </div>
+                <div class="modal-footer" id="workshopModalFooter" style="display: none;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                    <a href="#" id="workshopWebsiteBtn" class="btn btn-info" target="_blank" style="display: none;">
+                        <i class="bi bi-globe me-1"></i> Website besuchen
+                    </a>
+                    <a href="#" id="workshopDirectionsBtn" class="btn btn-primary" target="_blank">
+                        <i class="bi bi-geo-alt-fill me-1"></i> Route anzeigen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhFByDCtVZVnO5lteOgbbKPuw9jVeqpGE&libraries=places&callback=initMap"></script>
