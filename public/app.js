@@ -1018,32 +1018,71 @@ renderOverview() {
     document.getElementById('yearSelector').addEventListener('change', () => this.jumpToDate());
 }
     
-    renderCalendarGrid() {
-        const month = this.currentDate.getMonth();
-        const year = this.currentDate.getFullYear();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Woche beginnt am Montag
+   // ERSETZEN SIE DIESE KOMPLETTE FUNKTION
 
-        let html = '<div class="calendar-grid">';
-        ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach(day => {
-            html += `<div class="calendar-header-cell">${day}</div>`;
-        });
+renderCalendarGrid() {
+    const currentMonth = this.currentDate.getMonth();
+    const currentYear = this.currentDate.getFullYear();
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Woche beginnt Montag
 
-        for (let i = 0; i < startingDay; i++) {
-            html += '<div class="calendar-day other-month"></div>';
-        }
-
-        const today = new Date();
-        for (let day = 1; day <= daysInMonth; day++) {
-            const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-            html += `<div class="calendar-day ${isToday ? 'today' : ''}"><div class="calendar-day-number">${day}</div></div>`;
-        }
-
-        html += '</div>';
-        return html;
+    // 1. Hole alle relevanten Wartungen (nicht erledigt, keine Empfehlungen)
+    const carMaintenances = this.getCarMaintenances().filter(m => !m.completed && m.status !== 'recommended');
+    const maintenancesByDate = {};
+    
+    // 2. Gruppiere Wartungen nach Datum für schnellen Zugriff
+    carMaintenances.forEach(maintenance => {
+        const date = new Date(maintenance.next_date);
+        // Beachte: Wir normalisieren das Datum ohne Zeitzone, um Fehler zu vermeiden
+        const utcDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+        const dateKey = utcDate.toDateString();
+        if (!maintenancesByDate[dateKey]) maintenancesByDate[dateKey] = [];
+        maintenancesByDate[dateKey].push(maintenance);
+    });
+    
+    let html = '<div class="calendar-grid">';
+    
+    ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].forEach(day => {
+        html += `<div class="calendar-header-cell">${day}</div>`;
+    });
+    
+    for (let i = 0; i < startingDay; i++) {
+        html += '<div class="calendar-day other-month"></div>';
     }
+    
+    const today = new Date();
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, currentMonth, day);
+        const dateKey = date.toDateString();
+        const dayMaintenances = maintenancesByDate[dateKey] || [];
+        const isToday = date.toDateString() === today.toDateString();
+        
+        // 3. Füge die gefundenen Wartungen für den jeweiligen Tag dem HTML hinzu
+        html += `
+            <div class="calendar-day ${isToday ? 'today' : ''}">
+                <div class="calendar-day-number">${day}</div>
+                <div class="calendar-events">
+                    ${dayMaintenances.map(m => `
+                        <div class="calendar-maintenance status-${this.getMaintenanceStatus(m)}" 
+                             title="${m.type}">
+                            ${m.type}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    const totalCells = (startingDay + daysInMonth) > 35 ? 42 : 35;
+    for (let i = (startingDay + daysInMonth); i < totalCells; i++) {
+        html += '<div class="calendar-day other-month"></div>';
+    }
+
+    html += '</div>';
+    return html;
+}
     
 
 jumpToDate() {
