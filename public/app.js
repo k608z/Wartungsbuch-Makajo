@@ -1155,19 +1155,52 @@ jumpToDate() {
         this.bindMaintenanceEvents();
     }
     
-    renderMaps() {
-        const content = document.getElementById('main-content');
-        content.innerHTML = `
-            <div class="container-fluid">
-                <div class="card">
-                    <div class="card-header"><h4 class="card-title mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Werkstätten in der Nähe</h4></div>
-                    <div class="card-body">
-                        <div id="map" style="height: 500px; width: 100%;"></div>
+    
+
+
+renderMaps() {
+    const content = document.getElementById('main-content');
+    content.innerHTML = `
+        <div class="container-fluid">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Werkstätten in der Nähe</h4>
+                </div>
+                <div class="card-body">
+                    <div class="maps-controls">
+                        <div class="search-radius-control">
+                            <label for="searchRadius" class="form-label">Suchradius:</label>
+                            <select class="form-select" id="searchRadius" onchange="app.changeSearchRadius(this.value)">
+                                <option value="2000">2 km</option>
+                                <option value="5000" selected>5 km</option>
+                                <option value="10000">10 km</option>
+                                <option value="20000">20 km</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" id="useCurrentLocationBtn" onclick="app.useCurrentLocation()">
+                            <i class="bi bi-cursor-fill me-1"></i> Meinen Standort verwenden
+                        </button>
+                        <div class="location-status loading" id="locationStatus">
+                            <i class="bi bi-geo-alt"></i><span>Standort wird ermittelt...</span>
+                        </div>
                     </div>
+
+                    <div class="alert alert-info d-flex align-items-center mt-3">
+                        <i class="bi bi-mouse me-2"></i>
+                        <div>Klicken Sie auf die Karte, um einen manuellen Standort für die Suche festzulegen.</div>
+                    </div>
+
+                    <div class="maps-container mt-3">
+                        <div id="map" class="maps-loading"><div class="loading-spinner"></div><p>Karte wird geladen...</p></div>
+                    </div>
+
+                    <div class="workshop-list" id="workshopsList" style="display: none;"></div>
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
+
 
    renderMaintenanceItem(maintenance, detailed = false, showManagementButtons = false, isRecommendation = false, showDeleteOnly = false) {
     const status = this.getMaintenanceStatus(maintenance);
@@ -1220,9 +1253,13 @@ jumpToDate() {
     
     // ========== GOOGLE MAPS METHODS ==========
     
+  
+
+    
+    
     initializeMapsTab() {
-        if (typeof google === 'undefined') {
-            this.showMapsError('Google Maps API nicht verfügbar.');
+        if (typeof google === 'undefined' || typeof google.maps.places === 'undefined') {
+            this.showMapsError('Google Maps API nicht verfügbar. Prüfen Sie Ihren API-Key.');
             return;
         }
         this.getCurrentLocation();
@@ -1230,45 +1267,250 @@ jumpToDate() {
     
     getCurrentLocation() {
         if (navigator.geolocation) {
+            this.updateLocationStatus('loading', 'Standort wird ermittelt...');
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     this.userLocation = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
+                    this.updateLocationStatus('success', 'Standort ermittelt');
                     this.initializeMap();
                 },
                 () => {
-                    this.showLocationError('Standortzugriff verweigert.');
+                    this.showLocationError('Standortzugriff verweigert. Nutze manuellen Standort.');
                 }
             );
         } else {
-            this.showLocationError('Geolocation nicht unterstützt.');
+            this.showLocationError('Geolocation nicht unterstützt. Nutze manuellen Standort.');
         }
     }
-    
+
+// FÜGEN SIE DIESE NEUE FUNKTION HINZU
+
+useCurrentLocation() {
+    this.getCurrentLocation();
+}
+
+
     initializeMap() {
         const mapElement = document.getElementById('map');
         if (!mapElement || !this.userLocation) return;
 
+        mapElement.innerHTML = ''; // Ladeanzeige entfernen
+        mapElement.classList.remove('maps-loading');
+
         this.map = new google.maps.Map(mapElement, {
             center: this.userLocation,
-            zoom: 13,
+            zoom: 12,
             styles: this.isDarkMode ? this.getDarkMapStyles() : []
         });
 
-        new google.maps.Marker({
+        this.userMarker = new google.maps.Marker({
             position: this.userLocation,
             map: this.map,
-            title: 'Ihr Standort'
+            title: 'Aktueller Suchstandort'
         });
+        
+        // NEU: Event Listener für Klick auf die Karte
+        this.map.addListener('click', (e) => {
+            this.setManualLocation(e.latLng);
+        });
+
+        this.placesService = new google.maps.places.PlacesService(this.map);
+        this.searchWorkshops();
+        this.drawSearchCircle();
     }
     
+    // NEUE FUNKTION: Setzt den Standort manuell
+    setManualLocation(latLng) {
+        this.userLocation = { lat: latLng.lat(), lng: latLng.lng() };
+        
+        // Marker an die neue Position verschieben
+        this.userMarker.setPosition(latLng);
+        this.map.panTo(latLng); // Karte auf neuen Punkt zentrieren
+        
+        this.updateLocationStatus('info', 'Manueller Standort gesetzt');
+        
+        // Suche vom neuen Standort aus neu starten
+        this.searchWorkshops();
+        this.drawSearchCircle();
+    }
+
+    searchWorkshops() {
+        if (!this.placesService || !this.userLocation) return;
+        
+        const request = {
+            location: this.userLocation,
+            radius: this.searchRadius,
+            type: 'car_repair'
+        };
+        
+        this.placesService.nearbySearch(request, (results, status) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                this.displayWorkshops(results);
+            } else {
+                this.showMapsError('Keine Werkstätten gefunden oder Fehler bei der Suche.');
+            }
+        });
+    }
+
+    drawSearchCircle() {
+        if (this.searchCircle) {
+            this.searchCircle.setMap(null);
+        }
+        
+        this.searchCircle = new google.maps.Circle({
+            strokeColor: '#0d6efd',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#0d6efd',
+            fillOpacity: 0.15,
+            map: this.map,
+            center: this.userLocation,
+            radius: parseInt(this.searchRadius)
+        });
+    }
+
+    displayWorkshops(workshops) {
+        this.workshopsMarkers.forEach(marker => marker.setMap(null));
+        this.workshopsMarkers = [];
+
+        workshops.forEach(workshop => {
+            const marker = new google.maps.Marker({
+                position: workshop.geometry.location,
+                map: this.map,
+                title: workshop.name
+            });
+            this.workshopsMarkers.push(marker);
+        });
+
+        this.renderWorkshopsList(workshops);
+    }
+
+  
+
+
+showWorkshopDetails(placeId) {
+    const workshopModal = new bootstrap.Modal(document.getElementById('workshopModal'));
+    const modalTitle = document.getElementById('workshopModalTitle');
+    const modalBody = document.getElementById('workshopModalBody');
+    const modalFooter = document.getElementById('workshopModalFooter');
+    const websiteBtn = document.getElementById('workshopWebsiteBtn');
+    const directionsBtn = document.getElementById('workshopDirectionsBtn');
+
+    // Modal zurücksetzen und Ladeanzeige zeigen
+    modalTitle.textContent = 'Lade Details...';
+    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    modalFooter.style.display = 'none';
+    websiteBtn.style.display = 'none';
+    
+    workshopModal.show();
+
+    const request = {
+        placeId: placeId,
+        fields: ['name', 'vicinity', 'website', 'geometry', 'formatted_phone_number']
+    };
+
+    this.placesService.getDetails(request, (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place) {
+            modalTitle.textContent = place.name;
+            
+            let detailsHtml = `<p><i class="bi bi-geo-alt me-2"></i>${place.vicinity}</p>`;
+            if (place.formatted_phone_number) {
+                detailsHtml += `<p><i class="bi bi-telephone me-2"></i><a href="tel:${place.formatted_phone_number}">${place.formatted_phone_number}</a></p>`;
+            }
+            modalBody.innerHTML = detailsHtml;
+
+            if (place.website) {
+                websiteBtn.href = place.website;
+                websiteBtn.style.display = 'inline-block';
+            }
+            
+            // --- FINALE KORREKTUR HIER ---
+            // Dies ist die korrekte URL für Google Maps-Wegbeschreibungen
+            const origin = `${this.userLocation.lat},${this.userLocation.lng}`;
+            const destination = `${place.geometry.location.lat()},${place.geometry.location.lng()}`;
+            directionsBtn.href = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`;
+            
+            modalFooter.style.display = 'flex';
+        } else {
+            modalTitle.textContent = 'Fehler';
+            modalBody.innerHTML = 'Details konnten nicht geladen werden.';
+        }
+    });
+}
+
+
+
+
+renderWorkshopsList(workshops) {
+    const workshopsList = document.getElementById('workshopsList');
+    if (!workshopsList) return;
+
+    if (workshops.length === 0) {
+        workshopsList.innerHTML = '<div class="p-3 text-center text-muted">Keine Werkstätten in diesem Radius gefunden.</div>';
+    } else {
+        // Jedes Element bekommt einen onclick-Handler
+        workshopsList.innerHTML = workshops.map(w => {
+            const distance = this.calculateDistance(this.userLocation.lat, this.userLocation.lng, w.geometry.location.lat(), w.geometry.location.lng());
+            return `
+                <div class="workshop-item" onclick="app.showWorkshopDetails('${w.place_id}')">
+                    <div class="workshop-info">
+                        <h6>${w.name}</h6>
+                        <p class="text-muted mb-0">${w.vicinity}</p>
+                    </div>
+                    <div class="workshop-distance">
+                        ${distance.toFixed(1)} km
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    workshopsList.style.display = 'block';
+}
+
+    changeSearchRadius(radius) {
+        this.searchRadius = parseInt(radius);
+        if (this.map && this.userLocation) {
+            this.drawSearchCircle();
+            this.searchWorkshops();
+        }
+    }
+
     showLocationError(message) {
-        console.error(message);
-        // Fallback-Location, z.B. Berlin
-        this.userLocation = { lat: 52.5200, lng: 13.4050 };
+        this.updateLocationStatus('error', message);
+        this.userLocation = { lat: 52.5200, lng: 13.4050 }; // Fallback auf Berlin
         this.initializeMap();
+    }
+
+    updateLocationStatus(type, message) {
+        const statusElement = document.getElementById('locationStatus');
+        if (statusElement) {
+            statusElement.className = `location-status ${type}`;
+            statusElement.innerHTML = `
+                <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-triangle' : 'bi-info'}"></i>
+                <span>${message}</span>
+            `;
+        }
+    }
+
+    showMapsError(message) {
+        const mapElement = document.getElementById('map');
+        if (mapElement) {
+            mapElement.innerHTML = `<div class="maps-error"><p>${message}</p></div>`;
+        }
+    }
+
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius der Erde in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     getDarkMapStyles() {
