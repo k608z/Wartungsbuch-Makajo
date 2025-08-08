@@ -38,9 +38,12 @@
         </header>
 
         <div id="main-content" class="main-content">
-            </div>
+        </div>
     </div>
 
+    <!-- Modals -->
+
+    <!-- Add Car Modal -->
     <div class="modal fade" id="addCarModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -72,6 +75,7 @@
         </div>
     </div>
 
+    <!-- Edit Car Modal -->
     <div class="modal fade" id="editCarModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -103,6 +107,7 @@
         </div>
     </div>
 
+    <!-- Add Maintenance Modal -->
     <div class="modal fade" id="addMaintenanceModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -111,44 +116,40 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-    <div id="selectedCarInfo" class="alert alert-info mb-3"></div>
-    <form id="addMaintenanceForm">
-        <div class="mb-3 position-relative">
-            <label for="maintenanceType" class="form-label">Wartungstyp</label>
-            <input type="text" class="form-control" id="maintenanceType" placeholder="z.B. Ölwechsel, Inspektion..." required>
-            <div id="maintenanceSuggestions" class="maintenance-suggestions" style="display: none;"></div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Häufige Wartungstypen</label>
-            <div id="maintenancePresets" class="d-flex flex-wrap gap-2"></div>
-        </div>
-        
-        <div class="mb-3">
-            <label for="lastDate" class="form-label">Letztes Wartungsdatum</label>
-            <input type="date" class="form-control" id="lastDate" required>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-8">
-                <label for="interval" class="form-label">Intervall</label>
-                <input type="number" class="form-control" id="interval" required>
-            </div>
-            <div class="col-md-4">
-                <label for="intervalType" class="form-label">Einheit</label>
-                <select class="form-select" id="intervalType">
-                    <option value="months">Monate</option>
-                    <option value="years">Jahre</option>
-                </select>
-            </div>
-        </div>
-        <div>
-            <label for="mileageInterval" class="form-label">Kilometerintervall (optional)</label>
-            <input type="number" class="form-control" id="mileageInterval" placeholder="z.B. 10000">
-        </div>
-    </form>
-</div>
-
-
+                    <div id="selectedCarInfo" class="alert alert-info mb-3"></div>
+                    <form id="addMaintenanceForm">
+                        <div class="mb-3 position-relative">
+                            <label for="maintenanceType" class="form-label">Wartungstyp</label>
+                            <input type="text" class="form-control" id="maintenanceType" placeholder="z.B. Ölwechsel, Inspektion" required>
+                            <div id="maintenanceSuggestions" class="maintenance-suggestions" style="display: none;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Häufige Wartungstypen</label>
+                            <div id="maintenancePresets" class="d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="lastDate" class="form-label">Letztes Wartungsdatum</label>
+                            <input type="date" class="form-control" id="lastDate" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="interval" class="form-label">Intervall</label>
+                                <input type="number" class="form-control" id="interval" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="intervalType" class="form-label">Einheit</label>
+                                <select class="form-select" id="intervalType">
+                                    <option value="months">Monate</option>
+                                    <option value="years">Jahre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="mileageInterval" class="form-label">Kilometerintervall (optional)</label>
+                            <input type="number" class="form-control" id="mileageInterval" placeholder="z.B. 10000">
+                        </div>
+                    </form>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
                     <button type="button" class="btn btn-primary" id="saveMaintenanceBtn">Hinzufügen</button>
@@ -157,56 +158,57 @@
         </div>
     </div>
 
-  
-<div class="modal fade" id="editMaintenanceModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Wartung bearbeiten</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="editMaintenanceCarInfo" class="alert alert-info mb-3"></div>
-                <form id="editMaintenanceForm">
-                    <div class="mb-3">
-                        <label for="editMaintenanceType" class="form-label">Wartungstyp</label>
-                        <input type="text" class="form-control" id="editMaintenanceType" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="editLastDate" class="form-label">Letztes Wartungsdatum</label>
-                        <input type="date" class="form-control" id="editLastDate">
-                    </div>
-                    <div class="mb-3">
-                        <label for="editNextDate" class="form-label">Nächstes Wartungsdatum</label>
-                        <input type="date" class="form-control" id="editNextDate">
-                    </div>
-                    <div class="row">
-                        <div class="col-md-8">
-                            <label for="editInterval" class="form-label">Intervall</label>
-                            <input type="number" class="form-control" id="editInterval">
+    <!-- Edit Maintenance Modal -->
+    <div class="modal fade" id="editMaintenanceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Wartung bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editMaintenanceCarInfo" class="alert alert-info mb-3"></div>
+                    <form id="editMaintenanceForm">
+                        <div class="mb-3">
+                            <label for="editMaintenanceType" class="form-label">Wartungstyp</label>
+                            <input type="text" class="form-control" id="editMaintenanceType" readonly>
                         </div>
-                        <div class="col-md-4">
-                            <label for="editIntervalType" class="form-label">Einheit</label>
-                            <select class="form-select" id="editIntervalType">
-                                <option value="months">Monate</option>
-                                <option value="years">Jahre</option>
-                            </select>
+                        <div class="mb-3">
+                            <label for="editLastDate" class="form-label">Letztes Wartungsdatum</label>
+                            <input type="date" class="form-control" id="editLastDate">
                         </div>
-                    </div>
-                    <div class="mb-3 mt-3">
-                        <label for="editMileageInterval" class="form-label">Kilometerintervall (optional)</label>
-                        <input type="number" class="form-control" id="editMileageInterval">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-                <button type="button" class="btn btn-primary" id="saveEditMaintenanceBtn">Speichern</button>
+                        <div class="mb-3">
+                            <label for="editNextDate" class="form-label">Nächstes Wartungsdatum</label>
+                            <input type="date" class="form-control" id="editNextDate">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <label for="editInterval" class="form-label">Intervall</label>
+                                <input type="number" class="form-control" id="editInterval">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="editIntervalType" class="form-label">Einheit</label>
+                                <select class="form-select" id="editIntervalType">
+                                    <option value="months">Monate</option>
+                                    <option value="years">Jahre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label for="editMileageInterval" class="form-label">Kilometerintervall (optional)</label>
+                            <input type="number" class="form-control" id="editMileageInterval">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveEditMaintenanceBtn">Speichern</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
+    <!-- Delete Car Modal -->
     <div class="modal fade" id="deleteCarModal" tabindex="-1">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
@@ -228,6 +230,7 @@
         </div>
     </div>
 
+    <!-- Complete Maintenance Modal -->
     <div class="modal fade" id="completeMaintenanceModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -259,6 +262,7 @@
         </div>
     </div>
 
+    <!-- Workshop Details Modal -->
     <div class="modal fade" id="workshopModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -267,33 +271,18 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="workshopModalBody">
-                    </div>
-                <div class="modal-footer">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+                <div class="modal-footer" id="workshopModalFooter">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-                    <button type="button" class="btn btn-primary" id="getDirectionsBtn">Route anzeigen</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-<div class="modal fade" id="workshopModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="workshopModalTitle">Werkstatt-Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="workshopModalBody">
-                    <div class="text-center"><div class="spinner-border" role="status"></div></div>
-                </div>
-                <div class="modal-footer" id="workshopModalFooter" style="display: none;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-                    <a href="#" id="workshopWebsiteBtn" class="btn btn-info" target="_blank" style="display: none;">
-                        <i class="bi bi-globe me-1"></i> Website besuchen
+                    <a id="workshopWebsiteBtn" class="btn btn-outline-primary" target="_blank" style="display: none;">
+                        <i class="bi bi-link-45deg me-2"></i>Website
                     </a>
-                    <a href="#" id="workshopDirectionsBtn" class="btn btn-primary" target="_blank">
-                        <i class="bi bi-geo-alt-fill me-1"></i> Route anzeigen
+                    <button type="button" class="btn btn-primary" id="directionsInAppBtn" style="display: none;">
+                        <i class="bi bi-signpost me-2"></i>Route hier anzeigen
+                    </button>
+                    <a id="directionsInMapsBtn" class="btn btn-primary" target="_blank" style="display: none;">
+                        <i class="bi bi-compass me-2"></i>In Google Maps öffnen
                     </a>
                 </div>
             </div>
@@ -302,6 +291,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="app.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhFByDCtVZVnO5lteOgbbKPuw9jVeqpGE&libraries=places&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhFByDCtVZVnO5lteOgbbKPuw9jVeqpGE&libraries=places,directions&callback=initMap"></script>
 </body>
 </html>
